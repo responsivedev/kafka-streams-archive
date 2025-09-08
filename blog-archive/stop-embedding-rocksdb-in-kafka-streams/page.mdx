@@ -1,0 +1,111 @@
+import { apurva } from '@/authors'
+import openGraphImage from './opengraph-image.png'
+import BlogPost from "@/components/blog-post";
+import otterThrowingRock from './img/otter-throwing-rock.png'
+
+
+export const metadata = {
+    title: 'Stop embedding RocksDB in your Stream Processor!',
+    description: 'Why using embedded RocksDB with Kafka Streams may not be the right fit for you.',
+    date: '10-15-2024',
+    slug: 'stop-embedding-rocksdb-in-kafka-streams',
+    authors: [apurva],
+    image: otterThrowingRock,
+    published: true,
+    ctaText: 'Drop RocksDB from your Kafka Streams applications!',
+    getSdkCTA: true,
+    secondaryCTAText: 'The Responsive SDK brings remote state to Kafka Streams, allowing you to move on from RocksDB.',
+    read: 4
+}
+
+export default function Layout({children}) {
+    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
+}
+
+For years, popular stream processing frameworks such as Kafka Streams have used embedded RocksDB for state storage, primarily due to the efficiency of local storage and RocksDB’s ability to handle high-throughput, low-latency operations. Embedded state eliminates network overhead by keeping state local to the processing code, which makes sense if you’re aiming to optimize for latency in a distributed setting. In fact, embedded state is an architectural pattern that has become almost synonymous with modern stateful stream processing.
+
+But what if this default approach is suboptimal? What if we are unnecessarily sacrificing reliability, scalability, and maintainability for throughput? As stream processing use cases grow in complexity, and as demands for scalability, resilience, and operational simplicity increase, we’ve seen many developers trip over the inherent limitations of embedding RocksDB in their stream processor.
+
+In this post, we’ll explore the underlying trade-offs of embedding RocksDB in your stream processor and why it's time to rethink how we handle state in stream processing frameworks.
+
+## 1. Embedded RocksDB causes downtime
+
+There are many situations where the partitions of a Kafka Streams application, along with their associated state, need to be moved around. These include: 
+
+1. Node failures
+2. Scale ups
+3. Scale downs
+4. other events that may cause the task assignor to place partitions on new nodes.
+
+In many of these situations the RocksDB state has to be rebuilt from the underlying Kafka changelog topics. If that happens, the partitions in question will not be able to process any new events until the state is fully rebuilt, which could take a very long time for large state stores. This means that these partitions are offline for the duration of the state restoration, which could result in significant business impact.
+
+Kafka Streams does have standby replicas that can prevent long state restore times when nodes are lost. And it has warmup replicas to help maintain high availability during scale out operations. 
+
+While these features definitely improve the status quo, they are not perfect solutions. For instance, scale outs still take time since state needs to be copied onto the nodes you are adding. And warmup replicas don’t help in situations where you need to scale down. 
+
+More fundamentally, the problem of replicating state while solving for high availability has significantly [complicated](https://www.responsive.dev/blog/kafka-streams-history-of-rebalancing) the rebalance protocol. Consequently, many a developer has had to suffer runaway rebalances or imbalanced assignments, all of which impact application availability.
+
+By delegating the problem of replicated state to a dedicated database, Kafka Streams no longer has to solve the complicated problem of achieving high availability on a stateful distributed system. Thus problems like long state restorations disappear and your apps become much simpler to operate while becoming more resilient to a wide range of faults.
+
+## 2. Embedded RocksDB is inflexible
+
+Embedding RocksDB state in Kafka Streams nodes makes operations more difficult because:
+
+1. You have to worry about **tuning and capacity** planning for embedded state in addition to compute resources, which is a [hard problem to solve](https://www.responsive.dev/blog/a-size-for-every-stream). Even if you get this right up front, workloads change over time, often requiring the process to be redone. 
+2. Co-located compute and storage results in a **lack of elasticity** for two reasons. First, you can’t scale compute and storage independently. Second, scaling operations are expensive since you have to move state when you change the number of processing nodes. All of this compounds the previous problem, since it places a greater premium on getting the sizing right up front: you either risk downtime due to lack of capacity or you get an overprovisioned and inefficient system if you get it wrong.
+3. There is often **poor visibility** into the embedded state, and operations like inspection and patching is [challenging](https://streamingdata.substack.com/p/my-biggest-issue-with-apache-flink).
+4. You often have to use a foreign function interface to use RocksDB (like JNI in Java applications). Running applications with JNI poses challenges for debuggability, memory management, and more.
+
+Delegating state management to a separate database addresses all of these issues at the root.
+
+## 3. Embedded RocksDB is incomplete
+
+A final benefit of storing your state in a dedicated database is the additional functionality it unlocks. For instance:
+
+### 3.1 Fine grained Time-To-Live (TTL)
+
+For many applications, it is desirable to purge records in state stores after a period of time. In Kafka Streams, this means trying to use a `WindowedStore` or manually inserting tombstones into your input topics to delete records from your state store.
+
+However you slice it, deleting old records means that you need some additional process to clean up the records out of band. In the default Kafka Streams architecture, this mechanism also needs to account for the records in the changelog topic. 
+
+Most databases already have asynchronous processes that execute sophisticated compaction algorithms out of the box. These compaction algorithms can be trivially leveraged to implement fine grained time-to-live functionality, such as setting different time-to-live values for individual rows. 
+
+It is hard to implement a reliable, flexible, and scalable TTL feature. Using battle-hardened compaction algorithms of production databases means you won’t be reinventing the wheel while enjoying a superior outcome.
+
+### 3.2 Inspection and patching of state
+
+Debugging incidents often requires you to look up state. For instance, if you can’t make sense of your join output, you’d typically want to look up your state in order to explain the output you see. 
+
+Doing this with RocksDB is not straightforward: you need to know which partition the key is present on and then run an interactive query against the live application to get the state value for that key. 
+
+By contrast, dedicated databases have full fledged query layers. This means that you can just issue a lookup against the key to get it’s value. 
+
+And you can go further: in some cases you may want to update your state store directly, for instance if you have a corruption of a few rows. Since all databases allow you to update rows, you get this feature natively with a remote database. 
+
+As an example, it was fairly trivial for us to implement a CLI that allows you to [query and patch state](https://docs.responsive.dev/storage/cli) if you use Responsive’s remote state stores.
+
+## Ditch embedded RocksDB: remote state is the way to go
+
+It’s for these reasons that Responsive has invested significant effort to enable Kafka Streams to use battle-hardened
+remote databases like MongoDB for state storage.
+
+The [Responsive SDK](/sdk) enables full exactly-once semantics with remote state without sacrificing performance
+thanks to innovations like [async processing](https://www.responsive.dev/blog/async-processing-for-kafka-streams),
+client side bloom filters, batched writes, cached reads, and more. If you are curious, our
+[talk](https://www.confluent.io/events/kafka-summit-london-2024/its-a-trap-solving-restoration-with-custom-kafka-streams-state-stores/) at Kafka Summit London 2024 explains how we are able to offer remote state stores for Kafka Streams without
+sacrificing correctness or performance. With the SDK, you can get remote state for your Kafka Streams apps in
+[5 minutes](https://docs.responsive.dev/sdk/quickstart).
+
+As a result of using the SDK, our customers have seen significant improvements in availability, drop dead simple
+operations, and game changing elasticity.
+
+However, we’ve also spoken with many teams who want to remove embedded RocksDB from their Kafka Streams applications,
+but for whom storing state in an OLTP database like MongoDB is cost-prohibitive. These teams don’t need all the flexibility that
+databases like MongoDB offer, and have thus been encouraging us to find ways to reduce the costs of managed state.
+
+These conversations have inspired us to invest in technologies like [SlateDB](/blog/why-slatedb-for-kafka-streams) and a [RS3](/rs3-storage). RS3 is a managed
+remote state store for Kafka Streams that is 10x cheaper to operate than an equivalent managed OLTP database while being
+significantly more elastic. You can learn more about how RS3 works in the [documentation](https://docs.responsive.dev/storage/rs3).
+
+With the [Responsive SDK](/sdk) and [RS3](/rs3-storage) developers have now many options to modernize their stateful stream
+processing applications built with Kafka Streams. We are very excited about what will be built with this new freedom!

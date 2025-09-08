@@ -1,0 +1,168 @@
+import {apurva} from "@/authors";
+import openGraphImage from './opengraph-image.png'
+import BlogPost from "@/components/blog-post";
+
+import airbnb from "./img/airbnb-arch.png"
+import michelin from "./img/michelin-arch.png"
+import walmart from "./img/walmart-arch.png"
+import morganStanely from "./img/morgan-stanley-arch.png"
+import BlogCTA from "@/components/blog-cta";
+
+export const metadata = {
+    title: "Kafka Streams Sightings in the Wild",
+    description: "A sampling of some of the production use cases of Kakfa Streams from Walmart, AirBnb, Morgan Stanley, and Michelin.",
+    date: '12-13-2023',
+    slug: 'kafka-streams-production-use-cases',
+    authors: [apurva],
+    image: openGraphImage,
+    published: true,
+    read: 6
+}
+
+export default function Layout({children}) {
+    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
+}
+
+## Introduction
+
+Our recent posts have focused on helping developers operate their Kafka Streams applications. We discussed how to [tune state stores](https://www.responsive.dev/blog/guide-to-kafka-streams-state), how to [size](https://www.responsive.dev/blog/a-size-for-every-stream) Kafka Streams apps, and how to [tame rebalances gone wild](https://www.responsive.dev/blog/guide-to-kafka-streams-rebalancing).
+
+Today, we take a different angle. What are all those amazing developers doing with Kafka Streams? We searched for use cases of Kafka Streams and found public testimonials from [dozens of companies](https://github.com/responsivedev/awesome-kafka-streams/) talking about how they have deployed Kafka Streams in production. 
+
+In this post, we will summarize the use cases and architectures for four of these companies: Walmart, Airbnb, Michelin, and Morgan Stanley. We hope these examples will inspire you to use Kafka Streams in more of your apps!
+
+## Walmart
+
+### Use case: Realtime inference for fraud detection, recommendations, etc.
+
+[Walmart](https://www.walmart.com/) has built what they call a Customer BackBone (CBB) Platform in an event driven fashion using Kafka and Kafka Streams. 
+
+The CBB platform aggregates and enriches real time user events happening on Walmart online properties like [walmart.com](http://walmart.com) and jet.com to create an up-to-date profile for a customer that includes current and past activity, demographic information, and more. 
+
+This profile is then fed to multiple independent ML applications to make recommendations (e.g. for adding items to a cart during checkout based on activity in the current session), to block fraudulent transactions, to create personalized marketing emails, etc. 
+
+With this architecture the CBB platform built on Kafka Streams takes care of common tasks like data ingestion, data transformation, feature extraction, model inferencing/scoring, and post processing. This enables data scientists in various application teams to focus on training and iterating on their models independently of each other, resulting in faster time to market. 
+
+**Check out their talk**: [Model inferencing with Kafka Streams for Walmart’s Customer BackBone](https://www.slideshare.net/kafkazone/real-time-data-processing-and-model-inferncing-platform-with-kafka-streams-navinder-singh-walmart)
+
+### Architecture
+
+The platform comprises two layers:
+
+1. The core platform services.
+2. Apps focused on specific use cases like recommendations, fraud detection, and personalization.
+
+<div className={'flex justify-center py-6'}>
+    <img src={walmart.src} alt={"Walmart Architecture"} className={'w-2/3'}/>
+</div>
+
+The first Kafka Streams app ingests customer activity data and builds the identity for the customer including known demographic information, known personal information, etc. This app also aggregates customer activity events across the session. 
+
+The enriched customer profile is fed to downstream Kafka Streams apps, one per use case like recommendations, fraud detection, etc. These apps read the events, feed them into their model, and then produce relevant outputs like recommendations to show on the checkout page, whether a transaction should be blocked for suspected fraud, etc. 
+
+In effect, this is a graph of event driven microservices that power the online experiences for Walmart. This architecture enables independent teams to deploy models to do inferencing in a decoupled way, and yet leverage the same realtime customer data and shared infrastructure.
+
+## Airbnb
+
+### Use case: serializing code merges for stable builds
+
+[Airbnb](https://www.airbnb.com/) has built an event driven application called Evergreen to solve the problem of simultaneous merges on their monorepos conflicting with each other and consequently breaking their build. 
+
+As a simple example, if *Developer A* adds a parameter to an API, while *Developer B* adds a call using the old version of the API, both developers would succeed with local tests but it’s possible for the build to break when the commits land in trunk.
+
+To solve this type of problem, Airbnb built a system that collects pull requests from their source control service, converts them to Kafka Events, and then invokes three microservices to serialize the patches one behind the other. Due to this strict ordering, the build stays green as breaking changes will be blocked and have to be fixed before they are merged. 
+
+Thanks to Evergreen, their build is more stable, and if Evergreen is down it often breaks their build, leading to a loss of productivity for thousands of engineers. 
+
+**Check out the talk**: [Evergreen: Building AirBnb’s merge queue with Kafka Streams](https://www.confluent.io/events/kafka-summit-london-2022/evergreen-building-airbnbs-merge-queue-with-kafka-streams/).
+
+### Architecture
+
+Airbnb adopted a classic event driven microservice pattern that models a state machine and actor model using Kafka and Kafka Streams.
+
+<div className={'flex justify-center py-6'}>
+    <img src={airbnb.src} alt={"Airbnb Architecture"} className={'w-2/3'}/>
+</div>
+
+In the diagram above, events from source control service are ingested into Kafka and read by the `Supervisor`, which maintains an event driven state machine using Kafka Streams to track in flight merges, dependencies amongst them, etc. It’s the brains which does the ordering.
+
+The `Supervisor` fires off build instructions to `Workers` , which are also stateful Kafka Streams applications that execute builds. 
+
+Finally, the `Observer` is their third stateful Kafka Streams app which provides a dashboard to monitor inflight builds and issues there in.
+
+## Morgan Stanley
+
+### Use case: an event driven liquidity management platform
+
+[Morgan Stanley](https://www.morganstanley.com/) has built a Liquidity Management Platform using event driven microservices powered by Kafka Streams. This platform aggregates transactions across accounts belonging to the same clients, and then checks whether these transactions could violate client limits both in the present or in the future. The system enables operators to assess client liquidity and take action as appropriate in real time. 
+
+This is a system where exactly once guarantees are non-negotiable: mistakes can result in throttling transactions which is a significant risk for a financial institution. It’s notable and encouraging that Kafka Streams and Kafka exactly once semantics made the cut for Morgan Stanley in this case.
+
+**Check out the talk**:  [Consistent, High Throughput, Real time calculation engines powered by Kafka Streams](https://www.confluent.io/events/kafka-summit-london-2023/consistent-high-throughput-real-time-calculation-engines-using-kafka-streams/)
+
+### Architecture
+
+Morgan Stanley have implemented a classic event driven microservice architecture that models common patterns like SAGAs to revert transactions that exceed configured limits as well as state-enriched events to communicate across business domains. 
+
+<div className={'flex justify-center py-6'}>
+    <img src={morganStanely.src} alt={"Morgan Stanley"} className={'w-2/3'}/>
+</div>
+
+In a nutshell, transactions (credits and debits) are logged in a *transactions* topic. An *Account Balance service* aggregates credits and debits by account to maintain a current balance, which is logged to an *account balances* topic. Then a *Client Balance Service* combines the account balances across all accounts belonging to a client, and outputs the aggregate balance to a *client balances topic.* Finally a *Client Limit Monitor Service* consumes the *client balances* topic to check if the client is breaching their limit, and if so logs an event to a *Limit Breach Topic* which notifies staff who can take action. 
+
+## Michelin
+
+### Use Case: event driven microservices to power tire distribution
+
+Michelin moved from a business process orchestrator based solution to an event driven microservices architecture with Kafka and Kafka Streams to implement the following use cases:
+
+1. A Distribution Resource Planning (DRP) system to compute the deployment plans of tires from plants to warehouses,
+2. A Transportation Management System which optimizes their logistics, and 
+3. A Warehouse management system that manages their inventories. 
+
+The main motivation for this move was that the orchestrator was getting too complicated to understand and the decoupled architecture built around Kafka was more modular, more modern, and thus easier to operate. 
+
+We found their analysis of the pros and cons of an orchestrator that coordinates microservices, versus a decoupled event driven architecture in Part 1 of their series enlightening. 
+
+Amongst other things, their orchestrator presented a single point of failure and the orchestration logic became as complicated as the monoliths it was supposed to replace. It’s fascinating how an event driven microservice architecture addressed those core problems, but introduced different ones, which Michelin then went on to solve. 
+
+**Check out their blog series:** [Part 1](https://blogit.michelin.io/choregraphy-or-orchestration-thats-the-question/), [Part 2](https://blogit.michelin.io/moving-from-orchestration-to-choregraphy-part-2/), [Part 3](https://blogit.michelin.io/moving-from-orchestration-to-choreography-part-3/).
+
+### Architecture
+
+Michelin’s event driven architecture employs Kafka, Kafka Connect, and Stateful Kafka Streams applications running on kubernetes. 
+
+<div className={'flex justify-center py-6'}>
+    <img src={michelin.src} alt={"Michelin Architecture"} className={'w-2/3'}/>
+</div>
+
+Michelin’s Kafka Streams microservices are one part of very large system that includes Kafka Connect, and numerous observability tools. If you are interested, do check out their three part blog series linked to above.
+
+<BlogCTA author={apurva} title={"Want to showcase your use case here?"} className={'mb-6'}/>
+
+## Why Kafka Streams?
+
+As we can see, Kafka Streams is used for mission critical applications across major online services companies like Airbnb, a major retailer like Walmart, a major financial institution like Morgan Stanley, and a major manufacturer like Michelin. 
+
+Why did these teams pick Kafka Streams? Airbnb and Walmart were explicit about their reasons, which also probably hold true for Morgan Stanley and Michelin. 
+
+These teams chose Kafka Streams because it 
+
+1. .. is simple and ‘just works’.
+2. .. is a library which natively integrates into any application stack.
+3. .. is highly scalable.
+4. .. has exactly once guarantees.
+5. .. enables an event based, asynchronous, system architecture.
+
+The other common thread between all these examples is that:
+
+1. The Kafka Streams applications are written and operated by application developers, as opposed to data engineers or data scientists. 
+2. The applications are mission critical — if they go down, a significant part of the business is impacted. This means that operational control and observability are important, which in turn makes the Kafka Streams form factor extremely attractive since it integrates into existing tooling and adds minimal dependencies.
+
+If you want to see more examples, or have your own example you’d like to feature, we’ve compiled a list in [this GitHub repository](https://github.com/responsivedev/awesome-kafka-streams/).
+
+## Until next time
+
+At Responsive we think Kafka Streams is the absolute best option for application developers who want to build and operate event driven applications at scale. In our next post, we will further expand on what makes Kafka Streams almost perfect for these use cases, and where we see Kafka Streams and systems like it going in the coming years.
+
+Until then, happy holidays and a happy new year!

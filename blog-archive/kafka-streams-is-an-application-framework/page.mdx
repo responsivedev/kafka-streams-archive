@@ -1,0 +1,118 @@
+import {apurva} from "@/authors";
+import openGraphImage from './opengraph-image.png'
+import BlogPost from "@/components/blog-post";
+
+import grid from "./img/grid.png"
+import highLevel from "./img/High_Level_Arch.png"
+import padme from "./img/padme.jpg"
+
+export const metadata = {
+    title: "Kafka Streams is an Application Framework",
+    description: "In this post, we will dig deeper into what differentiates Kafka Streams and drives its popularity. Spoiler alert: we think its popularity stems from being akin to a powerful application framework.",
+    date: '01-09-2024',
+    slug: 'kafka-streams-is-an-application-framework',
+    authors: [apurva],
+    image: openGraphImage,
+    published: true,
+    read: 8
+}
+
+export default function Layout({children}) {
+    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
+}
+
+Our previous [post](https://www.responsive.dev/blog/kafka-streams-production-use-cases) highlighted how [Kafka Streams](https://kafka.apache.org/documentation/streams/) is used in production at several well known companies for mission critical use cases. For example, it's used at Walmart to power their real-time recommendation and fraud detection systems. And it's used at Morgan Stanley to power their liquidity management platform. The list goes on, with this [GitHub repo](https://github.com/responsivedev/awesome-kafka-streams/) documenting dozens more production use cases.
+
+In this post, we will dig deeper into what differentiates Kafka Streams and drives its popularity. Spoiler alert: we think its popularity stems from being akin to a powerful application framework that can adapt to a dizzying array of environments and workloads.
+
+Our view of Kafka Streams’ differentiation has profoundly impacted Responsive’s design. We explain how Responsive stays true to—and builds upon—Kafka Streams’ core strengths while also filling the gaps developers hit on their Kafka Streams journey.
+
+# Why Kafka Streams?
+
+Kafka Streams’ popularity rests on its form factor and feature combination which strike the right balance between flexibility and power.
+
+In the following sections, we’ll talk about how the API, form factor, and architecture of Kafka Streams combine to make a tremendously effective application framework that’s used by hundreds of companies to power mission critical applications.
+
+## 1. Simple and Powerful APIs
+
+Kafka Streams has a programming model and a set of APIs which with which you can build data pipelines, do light weight analytics, implement state machine and actor application models, orchestrate business processes, and pretty much anything else you can think expressing as a reactive application.
+
+The teams who adopt Kafka Streams often cite the simplicity of its API as being one of the key reasons they love it. In particular, you commonly hear that:
+
+1. The ‘event at a time’ processing model is very intuitive for developers to understand and run with.
+2. The two API flavors provide a continuum between simplicity and power. The DSL is similar to the Java 8 streams API while the Processor API (PAPI) boils down combining custom ‘process’ functions into a processing topology.
+3. The DSL and PAPI can be mixed and extended, so you can always pick the right tool for the job.
+4. The inbuilt operators automatically handle situations like late arriving data with support for exactly once semantics, allowing you to write correct programs with ease.
+
+No wonder it’s popular!
+
+## 2. A Flexible Form Factor
+
+<div className={'flex justify-center py-6'}>
+    <img src={grid.src} alt={"Realtime Apps Grid"} className={'w-2/3'}/>
+</div>
+
+Since Kafka Streams is a Java library that links into any app, it works seamlessly with every conceivable build, test, and deployment system that a company may use. And because it’s a library, it’s also clear who owns the application that’s deployed.
+
+In either case, an app built around Kafka Streams looks like any other application in an organization, both from a development and operations perspective.
+
+We think that this is the real differentiator for Kafka Streams. By meeting developers where they are, it takes away a surprising amount of friction. You don’t need to convince people to add a new development framework, modify the company tooling, procure a cluster (whether self managed or not). You just add a line to your maven or gradle file and off you go.
+
+And by continuing to be deployed like other applications, you use the same orchestration, monitoring, alerting, and logging frameworks. Thus it natively integrates with the operational processes of the company.
+
+For instance, if your company policy is for the development team to respond to production incidents involving their app, that doesn’t change with Kafka Streams. By contrast, if you deployed your app as a job in somebody else’s cluster, who should own the pager?
+
+By making questions such as this irrelevant, Kafka Streams removes several points of friction. This, combined with it’s simple, clear, and general API makes it a very attractive choice for a wide variety of event driven backend applications.
+
+## 3. A Well Factored Architecture
+
+<div className={'flex justify-center py-6'}>
+    <img src={highLevel.src} alt={"Walmart Architecture"} className={'w-2/3'}/>
+</div>
+
+One of the key reasons why Kafka Streams can pack so much power into a fairly light weight runtime is that it delegates several hard problems to adjacent technologies like Kafka (check out this [architecture doc](https://kafka.apache.org/11/documentation/streams/architecture) for more details). What’s more, it maintains clean interfaces to each of those adjacent technologies, which means that teams can replace the underlying implementations to suit their needs.
+
+For instance, Kafka Streams uses:
+
+1. RocksDB and changelog topics in Kafka to manage state: Kafka Streams materializes state on local nodes in RocksDB which provides blazingly fast key and range lookups, while a changelog topic in Kafka serves as the source of truth for the state. Materialized state is replicated to other Kafka Streams nodes through the changelog Kafka topic, thus achieving high availability. The state store [interface](https://kafka.apache.org/36/javadoc/org/apache/kafka/streams/processor/StateStore.html) is pluggable, so users can provide their own implementations, including remote state stores or stores optimized for different access patterns.
+2. The Kafka Consumer Group Rebalance protocol for workload management. The consumer group protocol detects liveness of worker tasks, rebalances tasks on to new nodes when nodes are added or removed or simply fail, and more. You can plug your own workload assignment logic, which paves the way to offloading a lot of the work the consumer group rebalance protocol does to an alternate implementation.
+3. Repartition topics in Kafka to shuffle data: With this design choice, Kafka is used to buffer data during shuffles, and there is no need to develop sophisticated internode communication channels into the Kafka Streams runtime. The Kafka topic repartitioner is just another processor in Kafka Streams, which means it’s possible for users to provide their own repartitioner in theory, even though there isn’t a way to configure this today.
+4. The Kafka Transaction Protocol for exactly once processing: by using Kafka Transactions, Kafka Streams can provide exactly once processing for each message through a single config option.
+
+As you can see some of the hardest parts of running a distributed stateful system are solved by the Kafka protocol and RocksDB in a way that is pluggable. This means that Kafka Streams itself can stay lean and mean while keeping the door open for development teams to replace some or all of these sub layers with parts that better fit their use cases.
+
+# An Application Framework is Born
+
+All of these properties combined are what make Kafka Streams resemble a reactive application framework: you get powerful APIs and features like state management, fault tolerance, elasticity, etc. out of the box, but most components that deliver those features can be swapped out through cleanly defined interfaces.
+
+In other words, you can think of the Kafka Streams core as providing an API, a handful of operators, and a thread management system. Your code builds on that API, while a set of swappable components implement the API.
+
+So you can start easily with Kafka Streams, and as you hit limits of it’s various subsystems, you always have the option to replace that subsystem with something more appropriate for your scale at that point in time.
+
+# “When you look at the dark side, careful you must be. For the dark side looks back.”
+
+<div className={'flex justify-center py-6'}>
+    <img src={padme.src} alt={"Padme Meme"} className={'w-2/3'}/>
+</div>
+
+Of course, no system is perfect and every design choice embodies a set of tradeoffs. In the case of Kafka Streams, we’ve seen that the default ‘Kafka as the only dependency’ implementation means that it is very easy to start with. Further, it can work very well for a lot of applications without changing anything.
+
+But one of the most common consequences of being so easy to adopt is that Kafka Streams often ends up being used for mission critical use cases. At that point, application teams become responsible for the reliability and availability of a stateful distributed application with all that that entails.
+
+Since so many things ‘just worked’ up to that point, these teams are often not prepared to handle the demands of monitoring, tuning, and sizing their critical applications. This can lead to less than desirable operational incidents and even extended outages as teams scramble to gather metrics and logs, and maybe try to understand [rebalances](https://www.responsive.dev/blog/guide-to-kafka-streams-rebalancing), or state store [tuning](https://www.responsive.dev/blog/guide-to-kafka-streams-state), or whether they are have enough [resources](https://www.responsive.dev/blog/a-size-for-every-stream) when their workload changes.
+
+It is generally not easy to understand all the variables involved in running Kafka Streams, much less so when you are under pressure! We’ve collectively been in 1000’s of hours of support calls for Kafka Streams, and we still find it hard 🙂
+
+# Responsive Balances the Kafka Streams Force
+
+At Responsive, we firmly believe in the value of a light but powerful application framework like Kafka Streams that runs in the application context. The flexibility afforded to developers in this model is far superior to alternatives where they ‘submit’ their code to a provider and then have to adapt all their tools and processes to the APIs of that provider (hint: you probably won’t get the flexibility you want).
+
+At the same time, we believe that developers shouldn’t have to tune and debug complicated systems they haven’t built.
+
+So we set out to make the Kafka Streams runtime simpler by taking advantage of the clean interfaces to provide managed, cloud-native, implementations of the hardest subsystems.
+
+Or first step has been to build a [remote storage](https://docs.responsive.dev/storage) solution that makes task movement cheap and removes the need for developers to tune embedded databases or understand state replication. We also built a [control plane](https://docs.responsive.dev/control-plane) that autotunes applications based on real time metrics and declarative optimization goals, so developers no longer need to figure out the right size and configurations for their application. And we are building [custom task assignment](https://cwiki.apache.org/confluence/display/KAFKA/KIP-924%3A+customizable+task+assignment+for+Streams) which will allow us to completely manage workload assignment, so developers don’t need to understand complicated workload management protocols.
+
+Taken together, Responsive manages the hard parts of running Kafka Streams apps for developers without sacrificing any of the functionality or flexibility they enjoy. A true [Goldilocks](https://en.wikipedia.org/wiki/Goldilocks_principle) scenario!
+
+If you are running Kafka Streams in production and have read this far, you are probably interested in what Responsive has to offer. Get in touch on our [discord](http://discord.gg/jEk8JvjJrg) or join our waitlist to get started.

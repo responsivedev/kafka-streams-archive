@@ -1,0 +1,195 @@
+import { rohan } from '@/authors'
+import BlogPost from "@/components/blog-post"
+import heroImage from './img/hero-image.png'
+import ebsVsS3StorageCosts from './img/ebs-vs-s3-storage-costs.png'
+import replicationDataXferVsInstanceCosts from './img/replication-data-xfer-vs-instance-cost.png'
+import s3PutAndGetCosts from './img/s3-put-get-costs.png'
+import workloadCostComparison from './img/workload-cost-comparison.png'
+
+export const metadata = {
+  title: 'If not RocksDB, then what? Why SlateDB is the right choice for Stream Processing.',
+  description: 'Why we think SlateDB is the right foundation for a state storage service for Kafka Streams.',
+  date: '10-29-2024',
+  slug: 'why-slatedb-for-kafka-streams',
+  authors: [rohan],
+  image: heroImage,
+  published: true,
+  ctaText: 'Stay updated on our SlateDB-based storage service for Kafka Streams',
+  read: 8
+}
+
+export default function Layout({children}) {
+  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
+}
+
+
+## Introduction
+
+In our [previous blog post](https://www.responsive.dev/blog/stop-embedding-rocksdb-in-kafka-streams), we wrote about the problems that stem from embedding RocksDB into your Kafka Streams applications. In short, we think embedded state imposes an unnecessary tax on the reliability, scalability, and maintainability of your applications, which is why Responsive has enabled using databases like MongoDB for Kafka Streams state from day one.
+
+However, storing Kafka Streams application state in an OLTP database like MongoDB can be cost prohibitive for applications that have high volumes of state and that don’t need the flexibility that a general purpose database like MongoDB offers. To fill this gap, we have been investing in building a cheaper state storage service on top of [SlateDB](https://slatedb.io/), an embedded database built on object storage.
+
+In this post, we will explain why we think SlateDB is a superior foundation for state storage for stream processors like Kafka Streams. We’ll first outline the factors that make traditional databases so expensive in the cloud and then use that insight to sketch out the motivations for SlateDB, how it works, and why we chose to build our state storage service on top of SlateDB instead of RocksDB.
+
+## Why OLTP Databases are Expensive
+
+We’ve already [laid out](https://www.responsive.dev/blog/stop-embedding-rocksdb-in-kafka-streams) the amazing benefits you realize by using an OLTP database like MongoDB or ScyllaDB to store state for your Kafka Streams application. Now let’s take a look at the other side of that coin and talk through some of the drawbacks.
+
+The biggest problem with OLTP databases is that they’re expensive. Everyone knows this, but it’s instructive to truly understand where that cost comes from.
+
+### Reason #1: Replication
+
+The largest factor in the cost of operating the typical OLTP database is data replication, which is necessary to achieve high availability and durability. 
+
+To achieve high availability you typically need at least three replicas in different availability zones (AZs) to assemble quorums for reads and writes. This includes both the data, and to support transactions, a log of changes to the data. (In theory if you have a consensus-driven log with three replicas you only need two replicas of the data itself for high-availability, but databases typically maintain three replicas of both the log and the database). 
+
+So you need to maintain 3 times the capacity to store and serve the data. This means 3 times as much compute, and 3 times as much storage, typically on expensive high-performance SSDs. 
+
+Further, you need to actually move the state across availability zones to replicate it which is deceptively expensive. For every GB of data you write, you need to copy it to two other AZs. Typically, each transfer costs $0.02/GB ($0.01/GB in each direction) - which adds up to $.04/GB written to a db with 3 replicas in AWS. This can really add up. 
+
+<div className={'flex justify-center py-6'}>
+  <img src={replicationDataXferVsInstanceCosts.src} alt={"Replication data transfer vs Instance costs for MongoDB YSCB workload"} className={'w-3/4'} />
+</div>
+
+For example, [MongoDB’s published benchmarks](https://www.mongodb.com/resources/compare/mongodb-benchmark) cite that they can perform 31864 ops/second for [YCSB workload A](https://github.com/brianfrankcooper/YCSB/blob/master/workloads/workloada), which does 50/50 writes and reads of 1KB records on an instance with 24VCPUs and 96GB of memory. With replication, this would amount to 54.7GB transferred/hour, or $2.18/hour for data transfers. The cheapest EC2 instance with equivalent specs (m6g.8xlarge) costs .7212$/hour, or $2.16/hour for three replicas. So you’re paying slightly more than your instances themselves just for replication data transfer!
+
+### Reason #2: Lack of elasticity
+
+Another factor that drives up cost is the need to over provision. There are a few reasons this is required. 
+
+First, OLTP databases like MongoDB and ScyllaDB are not very elastic because, in order to add capacity, you have to move the data to the newly provisioned nodes which can take a long time for large amounts of state. It’s also hard to predict how much physical storage and compute you’ll need for a workload. 
+
+Together this means that you have to provision for your estimated peak capacity, and you need to give yourself some headroom in case you’re wrong. Sometimes these peaks are much larger than steady-state. For example, with size-tiered and time-windowed compaction in ScyllaDB you need to provision [double](https://www.scylladb.com/2018/01/17/compaction-series-space-amplification/) your expected storage space to allow for major compactions.
+
+Further, if you need to scale up, you can only do so in coarse increments. So it’s likely your cluster at any time will have quite a bit of unused capacity.
+
+### Reason #3: Complexity
+
+Finally, databases are complex, which makes them hard to operate. An OLTP database typically supports transactions by implementing its own consensus-driven log, which itself is a notoriously complex distributed system. Further, each db has it’s own data model, implementation quirks, and toolset that you’ll have to understand deeply. 
+
+This means that you either have to hire a team of experts to operate your production databases, or you have to pay a vendor to do so. Either way there are significant costs attributable to the complexity of OLTP databases over and above the cost of the infrastructure you need to run the database itself.
+
+## The opportunity: a Cloud-and-Kafka native key-value store
+
+You’ll notice that these problems arise from the fact that OLTP databases like Scylla and Mongo predate the rise of Kafka and the modern cloud. They assume that the only infra you have are some computers and disks reserved for you, and therefore they have to solve problems like distributed consensus, replication, and resource management to offer a highly-available transactional database. 
+
+But the world today looks very different. Applications now typically run in clouds that give you far more robust building blocks for storage and compute. And Apache Kafka is widely deployed and very accessible with prices dropping every year, which means you now have a durable, transactional log as a building block too. 
+
+At Responsive we’ve been thinking a lot about what storage for an application framework like Kafka Streams should look like in a cloud-native and Kafka-native world. We concluded that we can use all these building blocks to dramatically reduce the cost and complexity of state storage for stream processors like Kafka Streams.
+
+> At Responsive we’ve been thinking a lot about what storage for an application framework like Kafka Streams should look like in a cloud-native and Kafka-native world. We concluded that we can use all these building blocks to dramatically reduce the cost and complexity of state storage for stream processors like Kafka Streams.
+
+For instance, Kafka Streams leverages the Kafka protocol to implement transaction processing and produces a transactional write-ahead-log in Kafka as the changelog topic. This is a very powerful building block in its own right.
+
+To serve queries on this data, we simply need to materialize this log in a queryable form. Cloud object stores like S3 provide another wonderful building block here. They’re extremely durable, and and are available across AZs at no additional charge. It’s also very cheap to store data, and you’re only charged for storage you actually use. 
+
+For example, S3 starts at just $0.023/GB-month. Compare this to a single gp3 EBS volume, which costs $0.08/GB-month. What’s more, a single gp3 volume is only available within a single AZ, so you’d need to replicate to 3 AZs which brings your cost up to $0.24/GB-month just to store the data, which is an order of magnitude more than the S3 price!
+
+<div className={'flex justify-center py-6'}>
+  <img src={ebsVsS3StorageCosts.src} alt={"EBS vs S3 Storage costs"} className={'w-3/4'} />
+</div>
+
+Further, compute in the cloud is highly elastic: you can provision it at will and its charged in per-second increments. This means you don’t have to pre-provision resources for background work like compaction — you can spin up compute for these jobs only when they need to be run. This is the third building block that can dramatically reduce the cost of operations.
+
+These three building blocks—Kafka, object storage, and elastic compute—can be exploited to deliver a store that dramatically drops the cost *and* complexity of state storage for stream processors like Kafka Streams which have traditionally relied on using embedded RocksDB for their state.
+
+## The missing building block: SlateDB
+
+However, there is a missing piece in the puzzle: you can’t just store your keys and values as objects in an object store like S3 and call it a day. 
+
+The downside with object stores is that first-byte latency is high (in the 10s of ms). Additionally, individual PUTs and, to a lesser extent GETs, are expensive. 
+
+For example, in S3 PUTs cost $0.005/1000 requests and GETs cost $0.0004/1000 requests. An aggregation doing a meager 1000 read-modify-writes/second would cost $157,680/year for PUTs and $12,614/year for GETs. You could mitigate the GET costs with effective caching, but PUT costs would be crippling, especially for the write-heavy workloads run by Kafka Streams.
+
+<div className={'flex justify-center py-6'}>
+  <img src={s3PutAndGetCosts.src} alt={"Put and Get costs for AWS S3"} className={'w-3/4'} />
+</div>
+
+So we need a fourth building block that can amortize writes to the object store across a large number of events. In other words, we need an LSM tree built for object storage, which leads us to [SlateDB](https://www.slatedb.io).
+
+SlatedDB implements an embedded log-structured-merge-tree (LSM) specifically for Object Storage. LSM trees are a great fit for Kafka Streams and Object Stores because they amortize the costs from Kafka Streams’ typically high write volumes by accumulating writes into large batches. They also only write entire files/objects at once, which sidesteps the limitation that Object Stores don’t support random writes.
+
+> [SlateDB](https://slatedb.io/) is an Apache 2.0 licensed LSM tree implementation designed for object stores. SlateDB has applied to be a part of the CNCF and is [awaiting entry](https://github.com/cncf/sandbox/issues/114) into the CNCF sandbox. Responsive has been one of the primary contributors to SlateDB from day 0, and we look forward to building SlateDB with contributors from across the industry!
+
+### SlateDB 101
+
+SlateDB is a lot like existing LSMs like RocksDB, except it stores data on Object Stores instead of local disk. 
+
+It works by accumulating writes in-memory and then writing them together into a single large object (64MB by default), amortizing the cost of the PUT over all the contained writes. The object is structured as a Sorted String Table (SST), which contains keys and values ordered by key, and an index to make it easy to find a key-value in the object. When enough of these SSTs accumulate, SlateDB compacts them into a larger range-partitioned set of SSTs called a Sorted Run. 
+
+Over time, these Sorted Runs are themselves compacted together to reduce the search space for reads and reclaim space from updates and deletes. This compaction process is designed to be fully decoupled from serving reads and writes, so it could be scheduled as-needed on dynamically provisioned compute.
+
+To serve reads, SlateDB searches through the sorted runs for the requested key(s). The search is pruned using the SST’s indexes. Each SST also maintains a bloom filter, so most sorted runs don’t need to be searched at all. 
+
+Finally, SlateDB supports in-memory and on-disk caches so large working sets can be fully cached to avoid high-latency and expensive Object Store GETs.
+
+### SlateDB: back of the envelope costs
+
+Let’s do some back-of-the-envelope math to try and compare the cost of a straw-man OLTP DB with a straw-man SlateDB setup in AWS. Let’s plan for a 1TB database that’s writing around 5000 200 byte records/second, or 1 MB/second.
+
+We’ll use MongoDB atlas as our OLTP database. We’ve done some benchmarks that tell us we’d need an M40 MongoDB Atlas instance to handle this workload. We need some headroom, so we’ll allocate 1.4TB of storage.
+
+It’s also interesting to understand the costs of a self-managed MongoDB. An M40 seems to correspond to an m5.xlarge EC2 instance, so we’ll also analyze a deployment that uses 3 m5.xlarge instances, each with 1.4TB of attached gp3 storage.
+
+For our straw-man SlateDB setup let’s suppose that we have some imaginary service that exposes a key-value store API that’s implemented using SlateDB. We’ll also pretend that this service supports running a hot standby instance to take over in case of a failure. We’ll plan for an m5.xlarge instance for SlateDB as well. We’ll assume that the whole database is cached locally for SlateDB so we never have to go to S3 for reads.
+
+Here’s how the annual costs break down for these different database configurations:
+
+<div className={'flex justify-center py-6'}>
+  <img src={workloadCostComparison.src} alt={"Cost comparison between MongoDB and a SlateDB Based service"} className={'w-3/4'} />
+</div>
+
+
+|  | Compute | Storage | Replication data transfer | IO data transfer | Total Costs |
+| --- | --- | --- | --- | --- | --- |
+| MongoDB Atlas | $9110 | $4905 | $1231  | $1231 | $18478 |
+| MongoDB | $3179 | $4128 | $1231* | $1231 | $9771 |
+| SlateDB | $1059 | $1265 | $0 | $1231 | $3557 |
+| SlateDB w/ a Standby | $2119 | $2249 | $0 | $1231 | $5600 |
+
+<div className={'text-xs font-light'}>
+  * The astute reader might notice that the transfer costs to compute cost ratio here is quite a bit lower than the YCSB workload example presented earlier in the blog. This is explained by the smaller record sized used in this example. Data transfer costs are determined by bytes read/written, whereas compute costs may be driven more by ops/second.
+</div>
+
+## Why not RocksDB?
+
+So we need an LSM tree to make the economics of object storage work for stream processors. But you may be asking whether it would be better to just fork RocksDB and modify it to work for Object Storage instead of writing another LSM tree from scratch. Indeed, this was our first thought as well, and we spent months prototyping a solution with RocksDB since RocksDB is widely used and rock solid (no pun intended!). 
+
+Through those efforts, we realized that RocksDB is designed around the assumption that the data is managed by a local filesystem that stores data on an attached SSD. This assumption made it very challenging to adapt RocksDB to use object storage as its storage layer. We faced a number of issues when trying to get RocksDB to store data in an object store, some of which we share below.
+
+### Reason #1: File system APIs don’t map cleanly to object store APIs
+
+RocksDB supports abstracting away the backing storage, but it does so behind a filesystem interface. Filesystem APIs are quite different from Object Store APIs, and they don't always map cleanly, so implementing their abstraction for Object Storage is awkward and can cause problems by breaking the RocksDB's assumptions. 
+
+For example, Object Stores don't support file linking which is used by RocksDB to retain checkpoints. RocksDB also relies on the file system to clean up data when links are removed. SlateDB instead maintains checkpoints in the DB metadata and runs a decoupled garbage collector to clean data up. 
+
+Another example: RocksDB relies on file locks provided by the Filesystem API to ensure exclusive access. Object Stores don’t support file locks. SlateDB implements [it's own write protocol](https://github.com/slatedb/slatedb/blob/main/rfcs/0001-manifest.md) that's based on compare-and-swap APIs to ensure writer isolation across nodes. 
+
+A final example: RocksDB relies on the filesystem cache to avoid reading recently written data. There is no such mechanism out of the box with Object Stores, and if the data is not cached explicitly on write then the first read of every key hits Object Storage, which is expensive. So SlateDB [implements its own write-through cache](https://github.com/slatedb/slatedb/blob/main/src/cached_object_store.rs) for the Object Store.
+
+### Reason #2: Assuming state is local removes many degrees of freedom
+
+Additionally, because RocksDB assumes all the state is on a disk attached to its machine, it’s not set up to take advantage of the cloud’s ability to let you decompose the db into isolated components. 
+
+For example, it’s awkward to set up remote compactions. It’s possible, but still requires compaction to be coordinated through the process that has RocksDB open. By contrast, [SlateDB compactions](https://github.com/slatedb/slatedb/blob/main/rfcs/0002-compaction.md) are designed to be fully decoupled from the main process, so they can run remotely without any additional coordination. 
+
+Similarly, with SlateDB it’s straightforward to open new DB instances on different nodes from a given [db checkpoint](https://github.com/slatedb/slatedb/pull/278), which is a fundamental building block for supporting Kafka Streams application snapshots. This is challenging with RocksDB as references are tracked using filesystem links as described above.
+
+Overall, we felt that the foundational assumptions we could make were different enough that we would get a better result by building a cloud-native LSM from first principles.
+
+## SlateDB isn’t all you need
+
+Your next thought might be - well great, so we can just replace the RocksDB instances embedded in Kafka Streams with
+SlateDB and call it a day.
+
+Not so fast! SlateDB is simple compared to OLTP Databases, but it is still an embedded database and as such is
+inherently complex to reason about. Most importantly, to avoid eating high GET costs and latencies, SlateDB needs a
+large on-disk cache on top of S3 for the working set. If you cache your data locally, you are going to suffer all the
+[same problems as embedded RocksDB](https://www.responsive.dev/blog/stop-embedding-rocksdb-in-kafka-streams), taking you back to square one.
+
+This is why we built [RS3](/rs3-storage), a service that provides remote state for Kafka Streams and uses
+[SlateDB](https://slatedb.io) as a building block. This way, you get all the amazing benefits of remote storage - easy
+configuration, reliability, and instant scaling/load-balancing - without the high costs of OLTP databases. It’s truly the best of all worlds.
+
+RS3 is perfect for large scale applications. If you have any questions about RS3 or SlateDB,
+[reach out to us](/contact-us) or hop on to our [discord](https://discord.gg/mKSs9WcF) to chat with us.
