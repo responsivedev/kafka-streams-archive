@@ -1,33 +1,18 @@
-import {apurva} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
+# Responsive at Kafka Summit London 2024
 
-import almogTalk from "./img/almog-talk.png"
-import happyHour from "./img/happy-hour.png"
-import chubbsConference from "./img/chubbs-conference.png"
+*Apurva Mehta · February 29, 2024 · 3 min read*
 
-export const metadata = {
-    title: "Responsive at Kafka Summit London 2024",
-    description: "All the ways to find us at Kafka Summit London 2024.",
-    date: '02-29-2024',
-    slug: 'kafka-summit-london-2024',
-    authors: [apurva],
-    image: openGraphImage,
-    published: true,
-    read: 3
-}
+All the ways to find us at Kafka Summit London 2024.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Responsive at Kafka Summit London 2024](opengraph-image.png)
+
+---
 
 The entire Responsive team will be at [Kafka Summit London](https://www.kafka-summit.org/events/kafka-summit-london-2024/about) from March 18-20 this year, and we would love to meet fellow Kafka Streams enthusiasts. This post covers all the ways you can find us at the Summit.
 
 ## Kafka Streams Happy Hour
 
-<div className={'flex justify-center pt-5'}>
-    <a href="https://www.responsive.dev/events/london-mar-2024"><img src={happyHour.src} alt={"Kafka Streams Happy Hour"} width={640}/></a>
-</div>
+[![Kafka Streams Happy Hour](img/happy-hour.png)](https://www.responsive.dev/events/london-mar-2024)
 
 If you love, like, or are simply curious about Kafka Streams, join us for an afternoon of pizza and drinks and mingle with your fellow Kafka Streams enthusiasts. This is a great chance to meet and learn from many of the engineers who created Kafka Streams.
 
@@ -37,9 +22,7 @@ If you love, like, or are simply curious about Kafka Streams, join us for an aft
 
 ## Responsive at Booth #306
 
-<div className={'flex justify-center pt-5'}>
-    <img src={chubbsConference.src} alt={"Responsive Booth"} width={640}/>
-</div>
+![Responsive Booth](img/chubbs-conference.png)
 
 The team will be staffing Booth #306 on the convention floor on both days of the Summit. We are right next to the t-shirt printing area at the back of the expo hall. Drop by if you want to see a demo of the Responsive platform, or to get a cute otter themed cap, or if you just want to say hi! We’d love to meet you 🙂
 
@@ -47,9 +30,7 @@ The team will be staffing Booth #306 on the convention floor on both days of the
 
 ## Talk: Solving Restoration Problems with Custom Kafka Streams State Stores
 
-<div className={'flex justify-center pt-5'}>
-    <img src={almogTalk.src} alt={"Solving State Restoration Problems Talk"} width={640}/>
-</div>
+![Solving State Restoration Problems Talk](img/almog-talk.png)
 
 In this talk [Almog Gavra](https://www.linkedin.com/in/agavra/) and [Sophie Blee-Goldman](https://www.linkedin.com/in/ableegoldman/) describe all the traps, gotchas and challenges in replacing the built-in RocksDB and In Memory State Stores with an external, hosted database. They will cover topics like how to maintain exactly once semantics with a remote store, how to fence zombie writers, and other fun topics!
 

@@ -1,40 +1,16 @@
-import { almog, sophie } from '@/authors'
-import BlogPost from "@/components/blog-post"
-import heroImage from './img/hero-image.png'
-import graceAndLate from './img/grace-period.png'
-import hopping from './img/hopping.png'
-import session from './img/session.png'
-import slidingFull from './img/sliding-full.png'
-import slidingOne from './img/sliding-one.png'
-import times from './img/times.png'
-import tumbling from './img/tumbling.png'
-import sessionGif from './img/session-window.gif'
-import slidingGif from './img/sliding-window-transparent.gif'
+# Kafka Streams 101: Windows & Time
 
-export const metadata = {
-  title: 'Kafka Streams 101: Windows & Time',
-  description: 'A Kafka Streams 101 lesson to understand the different types of windows and use of time in Kafka Streams',
-  date: '01-28-2025',
-  slug: 'windows-and-time-kafka-streams-101',
-  authors: [almog, sophie],
-  image: heroImage,
-  published: true,
-  ctaText: 'Subscribe to be notified about the next Kafka Streams 101 lesson',
-  read: 12,
-  ks101: true,
-}
+*Almog Gavra and Sophie Blee-Goldman · January 28, 2025 · 12 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+A Kafka Streams 101 lesson to understand the different types of windows and use of time in Kafka Streams
 
-<div className={'text-center text-sm'}>
-  **Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
-</div>
+![Kafka Streams 101: Windows & Time](img/hero-image.png)
+
+---
+
+**Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
 
 > **Learning Objective:** By the end of this Kafka Streams 101 lesson you will understand the different types of windows, when to use them and how to reason about out-of-order and late arriving events.
-
-<br />
 
 # Quick Summary
 
@@ -59,9 +35,7 @@ A quick comparison of the three:
 
 Here is a visual representation tying them together:
 
-<div className={'flex justify-center py-6'}>
-  <img src={times.src} alt={"Different uses of time in Kafka Streams"} className={'w-3/4'} />
-</div>
+![Different uses of time in Kafka Streams](img/times.png)
 
 ## Windows, Grace & Late-Arriving Records
 
@@ -80,9 +54,7 @@ The next thing to understand is how windows and the different versions of time a
 
 **Grace Period:** This defines when a window, based on the max observed stream time, will no longer accept new entries and the results of its computation will be considered final. In the example below, the grace period is also 5, meaning that the window `[0,4]` will no longer accept late arriving records after timestamp 10. The first record with `ts=3` is accepted “late” because the current stream time at that point is 8, which is less than 10. The second record with `ts=3` is rejected because the current stream time at that point is 18, which is greater than 10.
 
-<div className={'flex justify-center py-6'}>
-  <img src={graceAndLate.src} alt={"How handling late arriving records works in Kafka Streams"} className={'w-3/4'} />
-</div>
+![How handling late arriving records works in Kafka Streams](img/grace-period.png)
 
 ## Different Window Types
 
@@ -92,9 +64,7 @@ To simplify the discussion on different windows, we will use illustrations assum
 
 We described these in some detail above, but here is a more visual representation of a tumbling window with size 3:
 
-<div className={'flex justify-center py-6'}>
-  <img src={tumbling.src} alt={"Tumbling Windows"} className={'w-3/4'} />
-</div>
+![Tumbling Windows](img/tumbling.png)
 
 ### **Hopping Windows**
 
@@ -102,9 +72,7 @@ Hopping windows are a more general case of tumbling windows. They define a windo
 
 Here is a visual example of a hopping window with size 6 and advance 2:
 
-<div className={'flex justify-center py-6'}>
-  <img src={hopping.src} alt={"Hopping Windows"} className={'w-3/4'} />
-</div>
+![Hopping Windows](img/hopping.png)
 
 ### **Session Windows**
 
@@ -117,15 +85,11 @@ This is perfectly modeled using session windows. So long as page view events kee
 
 See this visual example below, where the session window has an inactivity period of 10:
 
-<div className={'flex justify-center py-6'}>
-  <img src={sessionGif.src} alt={"Session Windows (Animation)"} className={'w-3/4'} />
-</div>
+![Session Windows (Animation)](img/session-window.gif)
 
 And the same diagram without animation:
 
-<div className={'flex justify-center py-6'}>
-  <img src={session.src} alt={"Session Windows"} className={'w-3/4'} />
-</div>
+![Session Windows](img/session.png)
 
 **Note on out-of-order events in session windows.** Session windows are unique in that an out of order event may merge two windows together. In the example above, if an event comes in with `ts=15` windows 1 and 2 would be merged together into a single window because there’s no longer an inactivity gap of 10 between any two events in the window. From that point on, the output of the operator will no longer see outputs for window 1 or window 2 but instead see outputs for the newly combined window.
 
@@ -135,15 +99,11 @@ Sliding windows are windows that span events such that the difference between th
 
 Below is a visual representation of a sliding window of size 4. Notice how these three events combine to create five different windows.
 
-<div className={'flex justify-center py-6'}>
-  <img src={slidingGif.src} alt={"Sliding Windows (Animation)"} className={'w-3/4'} />
-</div>
+![Sliding Windows (Animation)](img/sliding-window-transparent.gif)
 
 And the same diagram shown without animation:
 
-<div className={'flex justify-center py-6'}>
-  <img src={slidingFull.src} alt={"Sliding Windows"} className={'w-3/4'} />
-</div>
+![Sliding Windows](img/sliding-full.png)
 
 Note that in this example there are five windows, containing the following entries:
 
@@ -159,9 +119,7 @@ Note that in this example there are five windows, containing the following entri
 
 In Kafka Streams, by default, data is output from a windowing aggregation `N` times for every input event where `N` is the number of active windows that the input event belongs to. Let’s take the sliding window example from above and focus on just one event, the event with `t=4`:
 
-<div className={'flex justify-center py-6'}>
-  <img src={slidingOne.src} alt={"Emitting multiple outputs for one input in windowed operations"} className={'w-3/4'} />
-</div>
+![Emitting multiple outputs for one input in windowed operations](img/sliding-one.png)
 
 When this event is processed, Kafka Streams notes that it belongs to two windows (windows 2 & 3 - window 4 isn't created until `t=6` is processed). This means that when event `t=4` is processed, the output of this aggregation will emit two different events: the updated aggregation value for window 2 and window 3.
 
@@ -255,10 +213,6 @@ Skipping record due to negative extracted timestamp. topic=[my-topic] partition=
 | `kafka.streams:type=stream-task-metrics,thread-id=[threadId],task-id=[taskId]` | `dropped-records-rate` | The rate of records dropped. Note that this includes records that are late arriving (after grace) as well as records with null keys and other invalid properties. |
 | `kafka.streams:type=stream-task-metrics,thread-id=[threadId],task-id=[taskId]` | `dropped-records-total` | The total number of records dropped since restarting the Kafka Streams application. |
 
-<br/>
-<hr/>
-<br/>
+---
 
-<div className={'text-sm'}>
-  <sup>1</sup> January 29th, 2025 Update: The original post had some off by one errors and minor inconsistencies. Thanks to Matthias J. Sax for proofing and suggesting the updates!
-</div>
+[1] January 29th, 2025 Update: The original post had some off by one errors and minor inconsistencies. Thanks to Matthias J. Sax for proofing and suggesting the updates!

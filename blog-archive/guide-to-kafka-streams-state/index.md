@@ -1,38 +1,18 @@
-import {almog} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import graph from './img/graph.png'
-import icebergStateful from './img/iceberg-stateful.png'
-import kafka13295 from './img/kafka-13295.png'
-import rocksDbCartoon from './img/rocks-db-cartoon.png'
-import stateRestore from './img/state-restore.png'
-import BlogPost from "@/components/blog-post";
-import GetResource from "@/components/blog-resource-cta";
+# Don't Panic: The Definitive Guide to Kafka Streams State
 
-export const metadata = {
-    title: "Don't Panic: The Definitive Guide to Kafka Streams State",
-    description: 'A definitive guide to managing Kafka Streams state that covers some history, architecture concepts and many tips to prevent panic in the face of long restoration and rebalances.',
-    slug: 'guide-to-kafka-streams-state',
-    date: '10-4-2023',
-    authors: [almog],
-    image: openGraphImage,
-    published: true,
-    read: 10,
-    ctaText: "Stop fighting with RocksDB!",
-    secondaryCTAText: 'The Responsive SDK enables you to use databases like MongoDB instead of RocksDB in Kafka Streams.',
-    getSdkCTA: true
-}
+*Almog Gavra · October 4, 2023 · 10 min read*
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+A definitive guide to managing Kafka Streams state that covers some history, architecture concepts and many tips to prevent panic in the face of long restoration and rebalances.
+
+![Don't Panic: The Definitive Guide to Kafka Streams State](opengraph-image.png)
+
+---
 
 *State is hard. Really hard. You just won't believe how vastly, hugely, mind-bogglingly hard it is. I mean, you may think it's a long way down the road to functional programming, but that's just peanuts to state. Listen...* \*
 
 Having spent years at Confluent in charge of operating deployments of Kafka Streams, we’re no strangers to the range of production incidents that can arise. One of the clearest patterns we saw in these incidents was that their frequency and severity was directly correlated with the amount of state, both in overall storage size and in number of state stores:
 
-<div className={'flex justify-center'}>
-    <img src={graph.src} alt={"graph"}/>
-</div>
+![graph](img/graph.png)
 
 Stateless applications rarely faced any downtime, while applications that managed terabytes of state would frequently encounter rebalancing storms sometimes paired with extremely long recovery times.
 
@@ -44,9 +24,7 @@ One downstream effect of this choice is that all state in Kafka Streams is consi
 
 As the backbone for business critical applications, Kafka Streams must provide strong processing semantic guarantees. This means that in order to process an event, the state store must reflect the updates from all previously processed events. The default store implementations are materialized locally and are not replicated to other nodes — instead every write to the local storage is first written to a changelog topic persisted to Kafka and this topic serves as the source of truth and persistence.
 
-<div className={'flex justify-center'}>
-    <img src={stateRestore.src} alt={"State Restoration"}/>
-</div>
+![State Restoration](img/state-restore.png)
 
 When something triggers data recovery (either a node failure, a restart with a corrupted local store, an EOS transaction timeout, a scale-out request or one of the many operations that shuffles partitions) the local state must be discarded and bootstrapped from scratch. This is achieved by reading the changelog from the beginning of time and inserting data into the local storage. Given the physical limitations of sending data across a network and writing to disk, this operation is understandably expensive both in time and resources.
 
@@ -68,9 +46,7 @@ The threading model simplifies the code and works great when restoration is quic
 
 This is especially bad if one of the tasks has started an EOS transaction, which is the issue reported in [KAFKA-13295](https://issues.apache.org/jira/browse/KAFKA-13295?jql=project%20%3D%20KAFKA%20AND%20text%20~%20%22timeout%20restore%22%20order%20by%20lastViewed%20DESC):
 
-<div className={'flex justify-center'}>
-    <img src={kafka13295.src} alt={"KAFKA-13295"}/>
-</div>
+![KAFKA-13295](img/kafka-13295.png)
 
 An active task begins processing and initializes a transaction, but before the transaction is committed there is a rebalance which assigns a task in need of restoration. Only active tasks commit transactions, and since restoration can take a long time it is likely that the transaction will timeout (not be committed) triggering another rebalance and potentially causing tasks on this node to shuffle around, starting the vicious cycle all over again.
 
@@ -85,8 +61,6 @@ This phenomena of long restoration foreshadowing a rebalance storm is not specif
 1. `max.poll.interval.ms` introduced with [KIP-62](https://cwiki.apache.org/confluence/display/KAFKA/KIP-62%3A+Allow+consumer+to+send+heartbeats+from+a+background+thread), is the maximum amount of time to process the result of a single call to poll(). You want to tune this value so that it's as large as possible without violating your business requirements — if there's a real error processing the result of the poll, this is the upper bound on how soon a rebalance can be triggered.
 1. `heartbeat.interval.ms` and `session.timeout.ms` account for full node failures. These configurations tune how often a background thread sends heartbeats to the broker and the maximum amount of time that the application can go without sending a heartbeat before being evicted from the group respectively. You want to make sure that these values are large enough to handle operations such as restarting a node to prevent unnecessary rebalances.
 1. `transaction.timeout.ms` effects how long a transaction can be open but not committed before it's actively aborted by the coordinator. The default here is typically large enough for most environments, so we only recommend tuning it if you frequently observe transactions timing out or have increased the `commit.interval.ms`. The transaction timeout should always be at least as large as the commit interval, though we recommend setting it a bit higher than that to give the `StreamThread` some breathing room to complete transactions within the timeout.
-
-<GetResource/>
 
 **Reduce the Overhead.** The next set of improvements attempt to hide the overhead of restoration, so if a rebalance does happen it doesn't disrupt normal operations:
 1. **Standby Replicas**: a standby replica (configured using [`num.standby.replicas`](https://kafka.apache.org/documentation/#streamsconfigs_num.standby.replicas)) is a replica that is perpetually in restoration mode but does not block processing of active tasks. If a failover happens, the Kafka Streams Partition Assignor will convert the standby to an active and ensure that the only restoration that needs to take place is any lag the standby was experiencing relative to the active task. Standby replicas come with numerous drawbacks — most obviously they (a) multiply the required disk space to run your Kafka Streams application, (b) increase load on your application nodes, (c) rack up cloud costs by multiplying the network utilization from Kafka, (d) increase load on your Kafka brokers and finally (e) contribute to additional complexity in the assignment protocol.
@@ -108,9 +82,7 @@ When Kafka Streams entered the picture, state was suddenly easily accessible in 
 
 To bring the rebalance protocol up to speed, Streams developers introduced two sets of improvements: the first aims to make partitions as “sticky” as possible, preventing shuffling of partitions and associated state, and the second attempts to intelligently place standby/warmup tasks (replicas) so that the load is well balanced across the nodes in your application.
 
-<div className={'flex justify-center'}>
-    <img src={icebergStateful.src} alt={"Stateful Iceberg"}/>
-</div>
+![Stateful Iceberg](img/iceberg-stateful.png)
 
 In the first category, the introduction of the `StickyAssignor` as a configurable assignor for the Kafka Consumer ensured that partitions were minimally shuffled during a rebalance so that state did not need to move with them. That helped mitigate the after effects of rebalances since consumers would end up with the same partition assignment when it was over, but what about during the rebalances themselves? Until the introduction of the `CooperativeStickyAssignor`, rebalances required every consumer in the group to stop working entirely so they could revoke all of their partitions — even though they would often get the same ones back (it is sticky after all). By providing two-phases of partition migration, this latest improvement allows nodes to keep ownership of partitions that didn't move (see [this excellent blog post](https://www.confluent.io/blog/cooperative-rebalancing-in-kafka-streams-consumer-ksqldb/) by our founding engineer Sophie for a deep dive on this assignor, or [KIP-429](https://cwiki.apache.org/confluence/display/KAFKA/KIP-429%3A+Kafka+Consumer+Incremental+Rebalance+Protocol) if you want to nerd out on the details). Both of these improvements also apply to Kafka Streams; they come out-of-the-box with the required `StreamsPartitionAssignor` and the default `HighAvailabilityTaskAssignor`.
 
@@ -124,9 +96,7 @@ These changes only scratch the tip of the complexity iceberg that is stateful ta
 
 Not only is tuning RocksDB notoriously difficult (though the wonderful Kafka Streams committers teamed up with one of the founders of RocksDB to [help guide you through it](https://www.confluent.io/blog/how-to-tune-rocksdb-kafka-streams-state-stores-performance/)), but this challenge is compounded when there are multiple instances of RocksDB deployed on a single node - which is typically the case in Kafka Streams topologies as each stateful task will have its own independent RocksDB instance.
 
-<div className={'flex justify-center'}>
-    <img src={rocksDbCartoon.src} alt={"RocksDB Cartoon"}/>
-</div>
+![RocksDB Cartoon](img/rocks-db-cartoon.png)
 
 When multiple RocksDB instances are running on a single node, they don't (by default) share a cache or write buffer. Since physical memory on your node is constrained (RocksDB and the JVM can't share the same memory), in practice these buffers are either tuned to be relatively small or flushed before they're full to avoid memory pressure. You can tune this using `Options#setWriteBufferSize` when configuring a [`RocksDBConfigSetter`](https://kafka.apache.org/36/javadoc/org/apache/kafka/streams/state/RocksDBConfigSetter.html) in Kafka Streams.
 
@@ -145,9 +115,9 @@ The takeaway here is that there's just as much art as there is science in operat
 *In the beginning, State and Compute were coupled. This has made a lot of people very angry and been widely regarded as a bad move.*
 
 At Responsive, we think the best way to solve all these problems is by removing RocksDB from the equation altogether.
-The [Responsive SDK](/sdk) allows you to use databases like MongoDB and Cassandra for your state stores without
+The [Responsive SDK](https://www.responsive.dev/sdk) allows you to use databases like MongoDB and Cassandra for your state stores without
 sacrificing throughput or correctness thanks to innovations like
-[async processing](/blog/async-processing-for-kafka-streams). The SDK is a downloadable library extension you can add
+[async processing](../async-processing-for-kafka-streams/index.md). The SDK is a downloadable library extension you can add
 directly to your applications. Our [quickstart](https://docs.responsive.dev/sdk/quickstart) will get you using MongoDB
 with your Kafka Streams app in 5 minutes.
 
@@ -157,9 +127,9 @@ which in turn makes rebalances cheap, simpler and more robust.
 
 Further, separating storage from compute makes scaling compute nodes instant, which improves application availability
 and lowers costs. There is no need to over-provision compute to handle peak traffic if you can scale to handle traffic
-bursts instantly! The [Responsive Control Plane](/control-plane) leverages this trait to deliver instant autoscaling for
+bursts instantly! The [Responsive Control Plane](https://www.responsive.dev/control-plane) leverages this trait to deliver instant autoscaling for
 Kafka Streams applications.
 
 If you have questions about Kafka Streams state you can chat with me (yup, I'll respond to your ping) or the rest of the team on our [Discord](http://discord.gg/jEk8JvjJrg).
 
-<p className={'mt-4 text-xs'}>*So you made it to the end and were wondering what the italicized quotes were all about? Go read the [Hitchhiker's Guide to the Galaxy](https://www.goodreads.com/book/show/11.The_Hitchhiker_s_Guide_to_the_Galaxy)!</p>
+*So you made it to the end and were wondering what the italicized quotes were all about? Go read the [Hitchhiker's Guide to the Galaxy](https://www.goodreads.com/book/show/11.The_Hitchhiker_s_Guide_to_the_Galaxy)!

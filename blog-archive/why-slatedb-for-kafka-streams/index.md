@@ -1,27 +1,12 @@
-import { rohan } from '@/authors'
-import BlogPost from "@/components/blog-post"
-import heroImage from './img/hero-image.png'
-import ebsVsS3StorageCosts from './img/ebs-vs-s3-storage-costs.png'
-import replicationDataXferVsInstanceCosts from './img/replication-data-xfer-vs-instance-cost.png'
-import s3PutAndGetCosts from './img/s3-put-get-costs.png'
-import workloadCostComparison from './img/workload-cost-comparison.png'
+# If not RocksDB, then what? Why SlateDB is the right choice for Stream Processing.
 
-export const metadata = {
-  title: 'If not RocksDB, then what? Why SlateDB is the right choice for Stream Processing.',
-  description: 'Why we think SlateDB is the right foundation for a state storage service for Kafka Streams.',
-  date: '10-29-2024',
-  slug: 'why-slatedb-for-kafka-streams',
-  authors: [rohan],
-  image: heroImage,
-  published: true,
-  ctaText: 'Stay updated on our SlateDB-based storage service for Kafka Streams',
-  read: 8
-}
+*Rohan Desai · October 29, 2024 · 8 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Why we think SlateDB is the right foundation for a state storage service for Kafka Streams.
 
+![If not RocksDB, then what? Why SlateDB is the right choice for Stream Processing.](img/hero-image.png)
+
+---
 
 ## Introduction
 
@@ -47,9 +32,7 @@ So you need to maintain 3 times the capacity to store and serve the data. This m
 
 Further, you need to actually move the state across availability zones to replicate it which is deceptively expensive. For every GB of data you write, you need to copy it to two other AZs. Typically, each transfer costs $0.02/GB ($0.01/GB in each direction) - which adds up to $.04/GB written to a db with 3 replicas in AWS. This can really add up. 
 
-<div className={'flex justify-center py-6'}>
-  <img src={replicationDataXferVsInstanceCosts.src} alt={"Replication data transfer vs Instance costs for MongoDB YSCB workload"} className={'w-3/4'} />
-</div>
+![Replication data transfer vs Instance costs for MongoDB YSCB workload](img/replication-data-xfer-vs-instance-cost.png)
 
 For example, [MongoDB’s published benchmarks](https://www.mongodb.com/resources/compare/mongodb-benchmark) cite that they can perform 31864 ops/second for [YCSB workload A](https://github.com/brianfrankcooper/YCSB/blob/master/workloads/workloada), which does 50/50 writes and reads of 1KB records on an instance with 24VCPUs and 96GB of memory. With replication, this would amount to 54.7GB transferred/hour, or $2.18/hour for data transfers. The cheapest EC2 instance with equivalent specs (m6g.8xlarge) costs .7212$/hour, or $2.16/hour for three replicas. So you’re paying slightly more than your instances themselves just for replication data transfer!
 
@@ -85,9 +68,7 @@ To serve queries on this data, we simply need to materialize this log in a query
 
 For example, S3 starts at just $0.023/GB-month. Compare this to a single gp3 EBS volume, which costs $0.08/GB-month. What’s more, a single gp3 volume is only available within a single AZ, so you’d need to replicate to 3 AZs which brings your cost up to $0.24/GB-month just to store the data, which is an order of magnitude more than the S3 price!
 
-<div className={'flex justify-center py-6'}>
-  <img src={ebsVsS3StorageCosts.src} alt={"EBS vs S3 Storage costs"} className={'w-3/4'} />
-</div>
+![EBS vs S3 Storage costs](img/ebs-vs-s3-storage-costs.png)
 
 Further, compute in the cloud is highly elastic: you can provision it at will and its charged in per-second increments. This means you don’t have to pre-provision resources for background work like compaction — you can spin up compute for these jobs only when they need to be run. This is the third building block that can dramatically reduce the cost of operations.
 
@@ -101,9 +82,7 @@ The downside with object stores is that first-byte latency is high (in the 10s o
 
 For example, in S3 PUTs cost $0.005/1000 requests and GETs cost $0.0004/1000 requests. An aggregation doing a meager 1000 read-modify-writes/second would cost $157,680/year for PUTs and $12,614/year for GETs. You could mitigate the GET costs with effective caching, but PUT costs would be crippling, especially for the write-heavy workloads run by Kafka Streams.
 
-<div className={'flex justify-center py-6'}>
-  <img src={s3PutAndGetCosts.src} alt={"Put and Get costs for AWS S3"} className={'w-3/4'} />
-</div>
+![Put and Get costs for AWS S3](img/s3-put-get-costs.png)
 
 So we need a fourth building block that can amortize writes to the object store across a large number of events. In other words, we need an LSM tree built for object storage, which leads us to [SlateDB](https://www.slatedb.io).
 
@@ -135,10 +114,7 @@ For our straw-man SlateDB setup let’s suppose that we have some imaginary serv
 
 Here’s how the annual costs break down for these different database configurations:
 
-<div className={'flex justify-center py-6'}>
-  <img src={workloadCostComparison.src} alt={"Cost comparison between MongoDB and a SlateDB Based service"} className={'w-3/4'} />
-</div>
-
+![Cost comparison between MongoDB and a SlateDB Based service](img/workload-cost-comparison.png)
 
 |  | Compute | Storage | Replication data transfer | IO data transfer | Total Costs |
 | --- | --- | --- | --- | --- | --- |
@@ -147,9 +123,7 @@ Here’s how the annual costs break down for these different database configurat
 | SlateDB | $1059 | $1265 | $0 | $1231 | $3557 |
 | SlateDB w/ a Standby | $2119 | $2249 | $0 | $1231 | $5600 |
 
-<div className={'text-xs font-light'}>
-  * The astute reader might notice that the transfer costs to compute cost ratio here is quite a bit lower than the YCSB workload example presented earlier in the blog. This is explained by the smaller record sized used in this example. Data transfer costs are determined by bytes read/written, whereas compute costs may be driven more by ops/second.
-</div>
+* The astute reader might notice that the transfer costs to compute cost ratio here is quite a bit lower than the YCSB workload example presented earlier in the blog. This is explained by the smaller record sized used in this example. Data transfer costs are determined by bytes read/written, whereas compute costs may be driven more by ops/second.
 
 ## Why not RocksDB?
 
@@ -187,9 +161,9 @@ inherently complex to reason about. Most importantly, to avoid eating high GET c
 large on-disk cache on top of S3 for the working set. If you cache your data locally, you are going to suffer all the
 [same problems as embedded RocksDB](https://www.responsive.dev/blog/stop-embedding-rocksdb-in-kafka-streams), taking you back to square one.
 
-This is why we built [RS3](/rs3-storage), a service that provides remote state for Kafka Streams and uses
+This is why we built [RS3](https://www.responsive.dev/rs3-storage), a service that provides remote state for Kafka Streams and uses
 [SlateDB](https://slatedb.io) as a building block. This way, you get all the amazing benefits of remote storage - easy
 configuration, reliability, and instant scaling/load-balancing - without the high costs of OLTP databases. It’s truly the best of all worlds.
 
 RS3 is perfect for large scale applications. If you have any questions about RS3 or SlateDB,
-[reach out to us](/contact-us) or hop on to our [discord](https://discord.gg/mKSs9WcF) to chat with us.
+[reach out to us](https://www.responsive.dev/contact-us) or hop on to our [discord](https://discord.gg/mKSs9WcF) to chat with us.

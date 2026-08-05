@@ -1,32 +1,12 @@
-import { rohan, sophie } from '@/authors';
-import openGraphImage from './opengraph-image.png';
-import BlogPost from '@/components/blog-post';
-import streamsTopology from './img/streams-topology.png';
-import sychronousExecution from './img/synchronous-execution.png';
-import asynchronousExecution from './img/asynchronous-execution.png';
-import asyncDiff from './img/async-processor-diff.png';
-import configDiff from './img/config-diff.png';
-import perfResults from './img/perf-results.png';
-import ReactEmbedGist from '@/components/gist';
+# Async Processing: The Biggest Upgrade for Kafka Streams Since 0.11
 
+*Rohan Desai and Sophie Blee-Goldman · August 21, 2024 · 12 min read*
 
-export const metadata = {
-    title: "Async Processing: The Biggest Upgrade for Kafka Streams Since 0.11",
-    description: "Introducing the Async Processor for Kafka Streams, which allows developers to make remote calls from Kafka Streams applications without sacrificing throughput.",
-    date: '08-21-2024',
-    slug: 'async-processing-for-kafka-streams',
-    authors: [rohan, sophie],
-    image: openGraphImage,
-    published: true,
-    read: 12,
-    ctaText: "Add Async processing to your Kafka Streams applications!",
-    secondaryCTAText: "The Responsive SDK includes the Async Processor described in this blog post. Try it free!",
-    getSdkCTA: true
-}
+Introducing the Async Processor for Kafka Streams, which allows developers to make remote calls from Kafka Streams applications without sacrificing throughput.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Async Processing: The Biggest Upgrade for Kafka Streams Since 0.11](opengraph-image.png)
+
+---
 
 Kafka Streams is the best framework for building mission-critical applications on Kafka event streams. A major reason is because it’s an embedded technology. So applications built with Kafka Streams integrate seamlessly with your development and operational processes.
 
@@ -51,12 +31,9 @@ Before diving into the Async Processor, let’s dig a little deeper into why you
 
 > If you’re intimately familiar with the problems posed by making remote calls from Kafka Streams, feel free to [jump ahead](#remote-calls-done-right-introducing-the-async-processor-for-kafka-streams) for a look at how to use the processor and a brief glimpse into how it works internally.
 
-
 Remote calls are a way to integrate your application with other systems. Let’s look at some use cases. We’ll illustrate these use cases using an example Kafka Streams application that handles “chat with support" requests for an online business by enriching and routing them. You can find the code for the example app [here](https://github.com/responsivedev/responsive-pub/blob/async-processor-example/kafka-client-examples/async-processor/src/main/java/dev/responsive/examples/async/ExampleApplication.java).
 
-<ReactEmbedGist
-  gist={'rodesai/cfa668bd2a9875382540b67edaeb0263'}
-/>
+[View code sample on GitHub Gist](https://gist.github.com/rodesai/cfa668bd2a9875382540b67edaeb0263)
 
 First, you might want to read data from an external system to incorporate it into your application. In our example, when a user initiates a request, the Kafka Streams app first needs to augment the event event with some metadata about the user that's stored in a DynamoDB database. In particular, we want to know what geographical location the user is in so they be routed to someone who is in the user’s time zone and speaks the user's language. 
 
@@ -66,9 +43,7 @@ Finally, you might want to call out to an external system to write data computed
 
 The following topology diagram illustrates the example app’s topology. The red nodes are the ones that make external calls:
 
-<div className={'flex justify-center max-w-[420px] mx-auto'}>
-    <img src={streamsTopology.src} alt={"A Kafka Streams topology with Processors that make remote calls in red."}/>
-</div>
+![A Kafka Streams topology with Processors that make remote calls in red.](img/streams-topology.png)
 
 ## The options for interfacing with external systems today
 
@@ -100,10 +75,7 @@ Let’s refer back to the topology diagram above. Remember, the red nodes are pr
 
 Let’s see how each of these can affect throughput. DynamoDB calls should take ~10ms, if you factor in round-trip-latency with DynamoDB’s processing time. So if our app was just calling DynamoDB then each `StreamThread` could do at most 100 records per second. Let’s say calls to the moderate endpoint take ~90ms. With this latency factored in we’re down to a paltry 10 records/second, as illustrated in the following diagram depicting the position of the `StreamThread` (red box) on the source records (blue squares) over time:
 
-<div className={'flex justify-center'}>
-    <img src={sychronousExecution.src} alt={"In the default mode, each message is processed serially by each processor, adding up to high latency when there are remote calls."}/>
-</div>
-
+![In the default mode, each message is processed serially by each processor, adding up to high latency when there are remote calls.](img/synchronous-execution.png)
 
 Finally, calls to a Slack WebHook also take ~100ms. But we can expect that messages won’t be flagged frequently, so it probably won’t impact throughput much, which is good because 10 records/second per `StreamThread` is pretty bad and will make it difficult, if not downright impossible, to meet most realistic workloads.
 
@@ -127,24 +99,17 @@ Furthermore, it does this while providing the exact same correctness guarantees 
 
 As of this writing, it requires that your remote calls be executed from a Processor API (PAPI) processor. To use it, you simply wrap your PAPI `ProcessorSupplier` in a call to Responsive’s `createAsyncProcessorSupplier` . Here’s what it looks like for our example app:
 
-<div className={'flex justify-center'}>
-    <img src={asyncDiff.src} alt={"How to integrate the Async Processor transparently into your application."}/>
-</div>
-
+![How to integrate the Async Processor transparently into your application.](img/async-processor-diff.png)
 
 You’ll also need to use Responsive’s Kafka Streams wrapper, which is a simple change to your call to create a new Kafka Streams instance, e.g:
 
-<div className={'flex justify-center'}>
-    <img src={configDiff.src} alt={"The imports you need to use the Async Processor."}/>
-</div>
+![The imports you need to use the Async Processor.](img/config-diff.png)
 
 `AsyncProcessor` works by running the processor’s `process` method on a separate worker thread pool that processes records in offset order for a *key* rather than the whole partition. This enables it to process multiple records per task/partition in parallel. This means that you can increase a `StreamThread`’s throughput by adding threads to the worker thread pool, even if the thread is only assigned a single task. 
 
 Let’s redo the analysis of our chat example, but this time using the Async Processor with a worker pool of 5 threads. With the async processor, assuming that all the records have distinct keys, the Streams Thread can now process 5 records at a time, as depicted in the diagram below:
 
-<div className={'flex justify-center'}>
-    <img src={asynchronousExecution.src} alt={"With the Async Processor, each processor can execute remote calls in parallel across multiple, thus signficantly reducing aggregate latency."}/>
-</div>
+![With the Async Processor, each processor can execute remote calls in parallel across multiple, thus signficantly reducing aggregate latency.](img/asynchronous-execution.png)
 
 After 100ms, the Stream Thread will have finished processing the first 5 records, and moved on to the next bunch of 5 records. So what used to take us a whole second is now completed in just 200ms. Our app can now run 50 records/second per `StreamThread`, when before it could only do 10 records/second. What’s more, we can scale throughput up by adding worker pool threads rather than `StreamThread`s.
 
@@ -211,10 +176,7 @@ Our customers have been using the Async Processor for transactional workloads ag
 
 The following plots show a dramatic improvement in throughput per thread when using the Async Processor against a managed Responsive store.
 
-<div className={'flex justify-center'}>
-    <img src={perfResults.src} alt={"With the Async Processor, you gain significantly higher throughput with fewer StreamThreads."}/>
-</div>
-
+![With the Async Processor, you gain significantly higher throughput with fewer StreamThreads.](img/perf-results.png)
 
 The plot on the left shows the throughput per thread (blue lines) and thread count (blue bars) before using the Async Processor. The customer had to run 96 threads to process their input topic. This is because each thread was bottlenecked waiting on Scylla reads, which took around 4 milliseconds to run. This means that each Stream Thread could process at most 250 records/second. 
 
@@ -231,13 +193,13 @@ Second, since we’ve implemented async processing as a Kafka Streams Processor,
 Combine these facts, and Kafka Streams and Responsive together now deliver stateful stream processing applications that
 embed without compromise into any environment, are backed by battle hardened
 [remote databases](https://docs.responsive.dev/storage) as state stores, are powered by the most
-[advanced autoscaler](/control-plane) for streaming applications, and which can interface with
+[advanced autoscaler](https://www.responsive.dev/control-plane) for streaming applications, and which can interface with
 other applications via both RPCs *and* Kafka. This is truly groundbreaking, and we are very excited about the use cases
 this will enable out in the world.
 
 > The Async Processor is available for every Responsive customer today. However, as we’ve mentioned before, we firmly believe that Kafka Streams’ most distinguishing feature is its ability to natively embed into your application and seamlessly integrate with your environment. The Async Processor adds a wholly new vector of integration with other applications. That’s why we believe this feature belongs in the core Kafka Streams product and are committed to contributing it back upstream to Apache Kafka.
 
-If you’d like to try the Async Processor, it's available as part of the [Responsive SDK](/sdk) for Kafka Streams. The SDK
+If you’d like to try the Async Processor, it's available as part of the [Responsive SDK](https://www.responsive.dev/sdk) for Kafka Streams. The SDK
 is a downloadable library you can add to your Kafka Streams application in [5 minutes](https://docs.responsive.dev/sdk/quickstart).
 To learn more about the async procssor, check out the [documentation](https://docs.responsive.dev/sdk/async-processing).
 And if you have any feedback or questions, head over [to our Discord](https://discord.gg/sTujj4nyRN).

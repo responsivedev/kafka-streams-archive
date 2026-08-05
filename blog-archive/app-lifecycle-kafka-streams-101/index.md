@@ -1,29 +1,14 @@
-import { almog } from '@/authors';
-import BlogPost from '@/components/blog-post';
-import heroImage from './img/hero-image.png';
-import stateMachine from './img/state-dfm.png'
-import metrics from './img/state-metrics.png'
+# Kafka Streams 101: Application Lifecycle
 
-export const metadata = {
-  title: 'Kafka Streams 101: Application Lifecycle',
-  description: 'Learn how to properly start, stop, and manage the lifecycle of Kafka Streams',
-  date: '02-24-2025',
-  slug: 'app-lifecycle-kafka-streams-101',
-  authors: [almog],
-  image: heroImage,
-  published: true,
-  ctaText: 'Subscribe to be notified about the next Kafka Streams 101 lesson',
-  read: 12,
-  ks101: true,
-}
+*Almog Gavra · February 24, 2025 · 12 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Learn how to properly start, stop, and manage the lifecycle of Kafka Streams
 
-<div className={'text-center text-sm'}>
-  **Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
-</div>
+![Kafka Streams 101: Application Lifecycle](img/hero-image.png)
+
+---
+
+**Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
 
 > **Learning Objective:** By the end of this Kafka Streams 101 lesson you will learn how to properly start, stop, and manage the lifecycle of Kafka Streams.
 
@@ -93,9 +78,7 @@ We’ll have a more detailed lesson on handling errors in a future KS101 lesson,
 
 State listeners can be registered with Kafka Streams to notify you when the state has changed from one of `CREATED` `REBALANCING` `RUNNING` `PENDING_SHUTDOWN` `NOT_RUNNING` `PENDING_ERROR` and `ERROR`. Kafka Streams operates as an FSM with the following topology:
 
-<div className={'flex justify-center py-6'}>
-  <img src={stateMachine.src} alt={"DFM for Kafka Streams application state"} className={'w-3/4'} />
-</div>
+![DFM for Kafka Streams application state](img/state-dfm.png)
 
 | State            | Description                                                                                                                                                                                                                                                                                    |
 |------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -120,9 +103,7 @@ kafkaStreams.setStateListener(new StateListener() {
 
 With the [Responsive SDK](http://www.responsive.dev/sdk), we’ve implemented a `SateListener` that reports a metric that is simply a number to indicate which state it’s in. If you’re not using the SDK, we recommend you implement something similar (or use the SDK!) and then graph it in your favorite metric visualizer:
 
-<div className={'flex justify-center py-6'}>
-  <img src={metrics.src} alt={"Current Kafka Streams state metrics"} className={'w-3/4'} />
-</div>
+![Current Kafka Streams state metrics](img/state-metrics.png)
 
 ### Restore Listeners
 
@@ -201,11 +182,7 @@ System.exit(0);
 
 We don’t usually recommend using Spring Boot for Kafka Streams applications since subtle interactions between different configurations are tricky, having control over your application lifecycle is important, and freedom to use a different version of Apache Kafka from the version spring uses might be necessary for bug fixes etc...
 
-<aside>
-
-  If you do use Spring Boot, make sure to use the most recent version! There are important fixes that have been released recently.
-
-</aside>
+> If you do use Spring Boot, make sure to use the most recent version! There are important fixes that have been released recently.
 
 That being said, all of the recommendations above are possible to implement using Spring Boot as well and many of the good practices are implemented out of the box:
 

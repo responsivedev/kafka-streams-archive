@@ -1,25 +1,12 @@
-import { almog } from '@/authors';
-import openGraphImage from './opengraph-image.png';
-import BlogPost from '@/components/blog-post';
-import grafanaScreenshot from './img/grafana-screenshot.png';
-import metricsArch from './img/metrics-arch.png';
-import monitoringLifecycle from './img/monitoring-lifecycle.png';
+# A Metrics API for Kafka Streams
 
+*Almog Gavra · August 29, 2024 · 5 min read*
 
-export const metadata = {
-  title: 'A Metrics API for Kafka Streams',
-  description: 'Introducing the Responsive Metrics API, which allows exporting metrics into your observability engine of choice.',
-  date: '08-29-2024',
-  slug: 'metrics-api',
-  authors: [almog],
-  image: openGraphImage,
-  published: true,
-  read: 5,
-};
+Introducing the Responsive Metrics API, which allows exporting metrics into your observability engine of choice.
 
-export default function Layout({ children }) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>;
-}
+![A Metrics API for Kafka Streams](opengraph-image.png)
+
+---
 
 ## Monitor Kafka Streams with Your Observability Stack
 
@@ -31,9 +18,7 @@ The rest of this post covers why Kafka Streams observability can be so challengi
 
 ## Why is Kafka Streams Observability Hard?
 
-<div className={'flex justify-center py-2 max-w-[500px] mx-auto'}>
-  <img src={monitoringLifecycle.src} alt={"The lifecycle of monitoring metrics"}/>
-</div>
+![The lifecycle of monitoring metrics](img/monitoring-lifecycle.png)
 
 **First,** Kafka Streams is a complex distributed system, and over time we’ve added hundreds of metrics to debug all sorts of nuanced problems. Your state store is using too much memory? There’s a metric for that. How much time is being spent on `punctuate` calls? There’s a metric for that. You want to know minimum, maximum or average cache hit ratio? You guessed it, there’s a metric for that too!
 
@@ -51,18 +36,13 @@ We’ve [written at length](https://www.responsive.dev/blog/monitoring-kafka-str
 
 Today we are solving all of your monitoring woes by introducing the Responsive’s Metrics API: a simple, prometheus-compatible endpoint for ingesting all the most important Kafka Streams metrics into your monitoring system of choice and preconfigured dashboard to match.
 
-<div className={'flex justify-center py-2'}>
-  <img src={grafanaScreenshot.src} alt={"Screenshot of the Responsive Dashboard in Grafana"}/>
-</div>
+![Screenshot of the Responsive Dashboard in Grafana](img/grafana-screenshot.png)
 
 ## How it Works: Powered by Kafka Streams
 
 Responsive exports all sorts of metrics: metrics we collect from Kafka Streams applications running in our customers’ VPCs, derived and primary metrics we compute in our control plane and storage metrics from MongoDB or ScyllaDB. In order to get these all in one place, correctly tagged by tenant and ingested into a prometheus instance, we pipe all the metrics from different sources into Kafka and materialize them in a streams-backed HTTP server for prometheus to scrape:
 
-<div className={'flex justify-center py-2 px-2'}>
-  <img src={metricsArch.src} alt={"The architecture for the metrics backend"}/>
-</div>
-
+![The architecture for the metrics backend](img/metrics-arch.png)
 
 The Kafka Streams app at the heart of this architecture is really simple, it just cleans some data and holds the metrics in a time-ordered buffer and exposes an endpoint for prometheus to scrape. Whenever prometheus scrapes that data, it clears its buffer of all the metrics that were scraped. (In case you were wondering, we are monitoring this app using Responsive's Metrics backend!)
 

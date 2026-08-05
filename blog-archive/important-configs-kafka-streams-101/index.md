@@ -1,27 +1,14 @@
-import { almog } from '@/authors';
-import BlogPost from '@/components/blog-post';
-import heroImage from './img/hero-image.png';
+# Kafka Streams 101: The Most Important Configs
 
-export const metadata = {
-  title: 'Kafka Streams 101: The Most Important Configs',
-  description: 'Learn which configurations are most critical for a reliable and efficient deployment',
-  date: '02-18-2025',
-  slug: 'important-configs-kafka-streams-101',
-  authors: [almog],
-  image: heroImage,
-  published: true,
-  ctaText: 'Subscribe to be notified about the next Kafka Streams 101 lesson',
-  read: 10,
-  ks101: true,
-}
+*Almog Gavra · February 18, 2025 · 10 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Learn which configurations are most critical for a reliable and efficient deployment
 
-<div className={'text-center text-sm'}>
-  **Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
-</div>
+![Kafka Streams 101: The Most Important Configs](img/hero-image.png)
+
+---
+
+**Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
 
 > **Learning Objective:** By the end of this Kafka Streams 101 lesson you will understand which configurations are most critical for a reliable and efficient deployment.
 

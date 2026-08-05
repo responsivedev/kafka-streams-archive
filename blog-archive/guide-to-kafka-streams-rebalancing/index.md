@@ -1,37 +1,12 @@
-import {sophie} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
-import {Icons} from "@/components/icons";
+# Defense Against the Dark Arts of Rebalancing in Kafka Streams
 
-import legend from "./img/legend.png";
-import normalPolling from "./img/normal-polling.png";
-import rebalance from "./img/rebalance.png";
-import newMember from "./img/new-member.png";
-import rebalanceHow from "./img/rebalance-how.png";
-import partitionAssignment from "./img/partition-assignment.png";
-import GetResource from "@/components/blog-resource-cta";
+*Sophie Blee-Goldman · November 15, 2023 · 25 min read*
 
-export const metadata = {
-    title: "Defense Against the Dark Arts of Rebalancing in Kafka Streams",
-    description: "For everyone who is in too deep and wants to peel back the curtains on one of the most elegant yet maddening aspects of Apache Kafka: the consumer group rebalancing protocol.",
-    date: '11-15-2023',
-    slug: 'guide-to-kafka-streams-rebalancing',
-    authors: [sophie],
-    image: openGraphImage,
-    published: true,
-    read: 25,
-    getSdkCTA: true,
-    ctaText: 'Say goodbye to your Kafka Streams rebalancing woes!',
-    secondaryCTAText: 'The Responsive SDK solves your rebalancing issues at the root by enabling the use of remote state.'
-}
+For everyone who is in too deep and wants to peel back the curtains on one of the most elegant yet maddening aspects of Apache Kafka: the consumer group rebalancing protocol.
 
-export function Incident911() {
-    return <Icons.shieldCheck className={'inline-block text-accent'}/>
-}
+![Defense Against the Dark Arts of Rebalancing in Kafka Streams](opengraph-image.png)
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+---
 
 *A practitioner’s guide. For everyone who is in too deep and wants to peel back
 the curtains on one of the most elegant yet maddening aspects of Apache Kafka:
@@ -47,7 +22,7 @@ rebalancing issues, you need to understand how the system works. This post will
 build the necessary context before arming you with the spells to banish
 rebalancing-related problems from your system.
 
-> <Incident911/> Read it all now to prepare yourself for future battles or skip
+> 🛡️ Read it all now to prepare yourself for future battles or skip
 > to the **“Incident 911”** sub-sections for concrete tips and specific
 > references that can help in an emergency.
 
@@ -58,30 +33,24 @@ protocol, this section covers the architectural components that play important
 roles in the act of rebalancing, the reasons they are triggered, and what
 happens during a rebalance.
 
-<div className={'pt-2 ml-5'}>
-<Incident911/> [The Why](#-the-why-incident-911) covers the specific causes of rebalancing that
+🛡️ [The Why](#-the-why-incident-911) covers the specific causes of rebalancing that
 apply to regular consumer groups as well as Kafka Streams, and how to identify
 them based on the logs you have.
-</div>
 
 **[Rebalancing in Kafka Streams](#rebalancing-in-kafka-streams)**: The middle section
 turns the focus from consumer groups in general to the specific example of Kafka
 Streams, and how rebalancing plays a role in your Streams applications.
 
-<div className={'pt-2 ml-5'}>
-<Incident911/> Look to [Rebalances Triggered by Streams](#-rebalances-triggered-by-streams-incident-911) for a
+🛡️ Look to [Rebalances Triggered by Streams](#-rebalances-triggered-by-streams-incident-911) for a
 logging-based guide to a special subset of rebalances that are unique to Kafka
 Streams.
-</div>
 
 **[Practical Defense Lessons](#practical-defense-lessons)**: In the final section,
 we drill down on the lessons in practical defense against real-world rebalancing issues.
 
-<div className={'pt-2 ml-5'}>
-<Incident911/> See [How to Read a Rebalance](#-how-to-read-a-rebalance-incident-911) for a general guide to
+🛡️ See [How to Read a Rebalance](#-how-to-read-a-rebalance-incident-911) for a general guide to
 approaching tough situations and tips for breaking down rebalances with
 concrete logging examples.
-</div>
 
 ## Rebalancing 101
 
@@ -188,16 +157,12 @@ Before we drill down into the causes of a rebalance, let’s introduce all the p
 
 In summary, here are the various actors at play in a consumer group:
 
-<div className={'flex justify-center py-6'}>
-    <img src={legend.src} alt={"Legend"} className={'w-2/3'}/>
-</div>
+![Legend](img/legend.png)
 
 When there’s no rebalancing going on, the interactions between these players
 during normal processing will look something like this:
 
-<div className={'flex justify-center pt-6'}>
-    <img src={normalPolling.src} alt={"Normal Polling"}/>
-</div>
+![Normal Polling](img/normal-polling.png)
 
 ### The Where
 
@@ -250,7 +215,7 @@ tracking, and debugging rebalances on the broker side:
    version 3.2.0 or above, the reason will contain details about why a consumer
    requested the group to rebalance.
 
->  <Icons.note className={'inline'}/> The specific log messages mentioned in
+>  📝 The specific log messages mentioned in
 >  this blog post are from version 3.6.0 of Apache Kafka, and many of the lines
 >  have changed across recent releases. You should always make sure to look at
 >  the exact wording of the logs in the source code for the specific version
@@ -283,9 +248,7 @@ the consumer you are looking at is only rebalancing because someone else
 triggered one first. You’ll need to check the other consumers (and/or the group
 coordinator) to figure out the root cause of that particular rebalance.
 
-<GetResource/>
-
-### <Incident911/> The Why (Incident 911)
+### 🛡️ The Why (Incident 911)
 
 > So, what are the actual reasons a group may have for rebalancing? Let’s drill
 > down into the specific scenarios to explain why a rebalance is occurring, and
@@ -300,9 +263,7 @@ coordinator) to figure out the root cause of that particular rebalance.
 
 #### Heartbeat Expiration
 
-<div className={'flex justify-center pt-8'}>
-    <img src={rebalance.src} alt={"Rebalance"}/>
-</div>
+![Rebalance](img/rebalance.png)
 
 Heartbeat expiration occurs when the heartbeat thread fails to contact the
 group coordinator within the configured `session.timeout.ms`, causing the group
@@ -343,9 +304,7 @@ rebalance:
 
 #### New Member Joins
 
-<div className={'flex justify-center pt-8'}>
-    <img src={newMember.src} alt={"New Member Joins"}/>
-</div>
+![New Member Joins](img/new-member.png)
 
 When a new consumer starts up and calls poll for the first time, it will
 attempt to join the group by sending a special kind of message called a
@@ -469,9 +428,7 @@ high-level look from the group coordinator’s point of view, and dissect some o
 these terms we’ve been throwing around. We can divide each rebalance into two
 distinct phases: the `JoinGroup` and the `SyncGroup`.
 
-<div className={'flex justify-center pt-8'}>
-    <img src={rebalanceHow.src} alt={"Rebalance (How)"}/>
-</div>
+![Rebalance (How)](img/rebalance-how.png)
 
 -   **`JoinGroup` Phase**: As we briefly introduced earlier, any consumer can
     initiate a rebalance by sending a JoinGroup request. In fact, during a
@@ -507,7 +464,6 @@ APIs of the assignor:
 ```java
 public interface ConsumerPartitionAssignor {
 
-
     /**
      * Return serialized data that will be included in the {@link Subscription}
      * sent to the leader and can be leveraged in {@link #assign(Cluster, GroupSubscription)} 
@@ -517,13 +473,11 @@ public interface ConsumerPartitionAssignor {
         return null;
     }
 
-
     /**
      * Perform the group assignment given the member subscriptions and current
      * cluster metadata.
      */
     GroupAssignment assign(Cluster metadata, GroupSubscription groupSubscription);
-
 
     /**
      * Callback which is invoked when a group member receives its assignment
@@ -544,9 +498,7 @@ invoking the `assign` API, however. Remember how the group coordinator will pick
 one of the consumers to elect as group leader for each rebalance? Well, this is
 why: to perform the assignment.
 
-<div className={'flex justify-center pt-8'}>
-    <img src={partitionAssignment.src} alt={"Partition Assignment"}/>
-</div>
+![Partition Assignment](img/partition-assignment.png)
 
 Now that you’ve been armed with an understanding of the rebalancing protocol,
 we can rewind back to the beginning of a rebalance and step through the process
@@ -611,7 +563,7 @@ assignment, invoke the `#onAssignment` callback to notify their personal
 assignor (even if that “assignor” was not actually involved in the assignment),
 and resume normal processing.
 
-<Icons.alert className={'inline text-destructive'}/> **WARN:** the Kafka consumer
+⚠️ **WARN:** the Kafka consumer
 will attempt to enforce the timeout passed in to `#poll` regardless of an
 active rebalance, and therefore it may not always complete a rebalance within
 a single invocation of `#poll`! 
@@ -678,7 +630,7 @@ logs:
 "Triggering the followup rebalance scheduled for <SCHEDULED_TIME>"
 ```
 
-### <Incident911/> Rebalances Triggered by Streams (Incident 911)
+### 🛡️ Rebalances Triggered by Streams (Incident 911)
 
 > While there’s nothing wrong with a little rebalancing, sometimes applications
 > seem to fall into a black hole of rebalancing from which they don’t recover.
@@ -700,7 +652,7 @@ page to the subject of externally-triggered rebalances, and take a close look
 at each of the cases in which the StreamsPartitionAssignor will request a
 followup rebalance.
 
-<Icons.note className={'inline'}/> **Note**: some of these are more niche than
+📝 **Note**: some of these are more niche than
 others, but we’re including them all for completeness. If you’re experiencing a
 rebalancing loop emergency you should hang up and call 911 focus on the first 2
 reasons below.
@@ -857,7 +809,7 @@ support team in clear language that will get you help the fastest, or just
 writing up a post-mortem report on an incident (10 inches of parchment
 minimum!)
 
-### <Incident911/> How to Read a Rebalance (Incident 911)
+### 🛡️ How to Read a Rebalance (Incident 911)
 
 > Like with all distributed systems, the multiple actors of a consumer group
 > can make it difficult to understand how the system as a whole is behaving.
@@ -865,7 +817,7 @@ minimum!)
 > identify them, and a single group leader for each rebalance that can be
 > isolated to understand the driving forces.
 
-<Icons.note className={'inline'}/> **NOTE:** To dig into an app experiencing difficulties
+📝 **NOTE:** To dig into an app experiencing difficulties
 with rebalances, you’ll want to make sure to collect logs across all members of
 the group. The most important logs are in the `StreamsPartitionAssignor` and
 `StreamThread` on the Streams side, and the `ConsumerCoordinator` and
@@ -906,7 +858,7 @@ node0.log: [11:10:57,362] INFO stream-thread [otter-app-225712b8-b54d-4043-a7e1-
 node0.log: [11:24:30,654] INFO stream-thread [otter-app-225712b8-b54d-4043-a7e1-c489ee4f8fd5-StreamThread-1-consumer] 2 client nodes and 4 consumers participating in this rebalance:
 ```
 
-<Icons.check className={'inline text-green-500'}/> **NOTE:** the log prefix
+✅ **NOTE:** the log prefix
 for the `StreamsPartitionAssignor` contains these elements:
 `applicationId-processId-threadId`. The first part of the string should be
 recognizable as your app id. The last part will always be
@@ -1028,7 +980,7 @@ node0.log: [18:13:57,362] INFO stream-thread [...] 3 client nodes and 4 consumer
 node0.log: [18:14:30,654] INFO stream-thread [...] 2 client nodes and 4 consumers participating in this rebalance:
 ```
 
-<Icons.alert className={'inline text-destructive'}/> **NOTE:** This log message was
+⚠️ **NOTE:** This log message was
 recently changed to include the summary of node and consumer count explicitly,
 so in earlier versions (3.5.0 or below) you will need to count this yourself.
 The assignor will print each node on a separate line, so you’ll want to add a
@@ -1112,7 +1064,7 @@ with state.
 At Responsive, we’re working on making endless rebalances a thing of the past
 by tackling the root causes of the problem.
 
-First, the [Responsive SDK](/sdk) decouples RocksDB state from your application
+First, the [Responsive SDK](https://www.responsive.dev/sdk) decouples RocksDB state from your application
 nodes, allowing you to store it in databases like MongoDB and Cassandra instead.
 By making the application nodes stateless, rebalances are instant and the
 assignment logic is simplified since assignments no longer have to be sticky.
@@ -1121,7 +1073,7 @@ downloadable library extension which you can use to move your RocksDB state to
 MongoDB [in 5 minutes](https://docs.responsive.dev/sdk/quickstart).
 
 Second, we implemented [KIP-924](https://cwiki.apache.org/confluence/x/PxU0Dw) which enables pluggable task assignment logic.
-The [Responsive Control Plane](/control-plane) will soon take advantage of this to
+The [Responsive Control Plane](https://www.responsive.dev/control-plane) will soon take advantage of this to
 manage task assignment directly, allowing us to automatically resolve any residual
 issues that may arise with rebalances and allow us to provide advanced functionality
 like managed application upgrades as well.

@@ -1,32 +1,16 @@
-import { sophie } from '@/authors'
-import BlogPost from "@/components/blog-post"
-import heroImage from './img/hero-image.png'
-import beforeAfter from './img/before-after-topo.png'
+# Kafka Streams 101: Topology Upgrades
 
-export const metadata = {
-  title: 'Kafka Streams 101: Topology Upgrades',
-  description: 'A Kafka Streams 101 lesson to learn how to identify unsafe changes to a topology and the techniques to mitigate them',
-  date: '02-13-2025',
-  slug: 'topology-upgrades-kafka-streams-101',
-  authors: [sophie],
-  image: heroImage,
-  published: true,
-  ctaText: 'Subscribe to be notified about the next Kafka Streams 101 lesson',
-  read: 20,
-  ks101: true,
-}
+*Sophie Blee-Goldman · February 13, 2025 · 20 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+A Kafka Streams 101 lesson to learn how to identify unsafe changes to a topology and the techniques to mitigate them
 
-<div className={'text-center text-sm'}>
-  **Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
-</div>
+![Kafka Streams 101: Topology Upgrades](img/hero-image.png)
+
+---
+
+**Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
 
 > **Learning Objective:** By the end of this Kafka Streams 101 lesson you will understand the different types of application upgrades and how to evaluate their risks, learn how to identify unsafe changes to a topology and the techniques to mitigate them, and develop a plan to keep your apps safe with best practices you can put in place for new applications to make your future self’s life easier
-
-<br/>
 
 # Quick Summary
 
@@ -264,9 +248,7 @@ Notice how the “orders” store has moved from subtopology 0 to subtopology 1 
 
   > 🖌️ Topology descriptions can be pretty difficult to read, especially as they get long and unwieldy — remember you can plug it into the [visualizer](https://zz85.github.io/kafka-streams-viz/) to generate a diagram that’s much easier on the eyes, as shown below
 
-<div className={'flex justify-center py-6'}>
-  <img src={beforeAfter.src} alt={"Topology state store before/after"} className={'w-3/4'} />
-</div>
+![Topology state store before/after](img/before-after-topo.png)
 
 ### Changing keys
 
@@ -340,73 +322,11 @@ Both applications will read from the same input topics, but each maintains a sep
 
 Tips: check out [this webinar](https://www.responsive.dev/resources/metronome-kafka-streams-interview) for an in-depth look at a real world example
 
-<table className={'border-gray-200 mt-6 mb-6 text-sm'}>
-  <thead className={'bg-black text-white'}>
-  <tr>
-    <th></th>
-    <th>Pros</th>
-    <th>Cons</th>
-    <th>When to Use</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr className={'align-text-top'}>
-    <td className={'align-middle'}><strong>Rolling Bounce</strong></td>
-    <td>
-      - No application-wide downtime
-      - Minimizes impact of issues/errors in new version
-      - Little to no build-up of latency or lag
-    </td>
-    <td>
-      - Takes longer to complete
-      - Individual tasks can still see downtime and build up latency/lag in stateful applications with insufficient
-      standbys
-      - Potential for unnecessary rebalancing & task movement if the timing is off or you get unlucky with rebalances
-    </td>
-    <td>
-      - Simple restarts
-      - Version upgrades
-      - Minor application changes like config updates or compatible topology upgrades
-    </td>
-  </tr>
-  <tr className={'bg-gray-100 align-text-top'}>
-    <td className={'align-middle'}><strong>Stop and Restart</strong></td>
-    <td>
-      - Fastest to perform and stabilize after
-      - No mixed versions (e.g., upgrading across incompatible changes)
-      - Can use application reset tool or clear state in between
-    </td>
-    <td>
-      - Full application downtime may be unacceptable
-      - Records delayed during the upgrade will have large end-to-end latency
-      - Builds up backlog that will need to be burned through on restart
-      - Apps running at or near max capacity may struggle to catch up on the resulting lag
-    </td>
-    <td>
-      - Certain types of otherwise-incompatible upgrades (especially ones that require the application reset tool)
-      - Low-throughput applications with no (or very generous) latency/downtime requirements
-    </td>
-  </tr>
-  <tr className={'align-text-top'}>
-    <td className={'align-middle'}><strong>Blue/Green</strong></td>
-    <td>
-      - Can enable incompatible upgrades without downtime by reprocessing in parallel
-      - No downtime whatsoever
-      - No disruption due to rebalancing/task shuffling
-      - Should stabilize immediately after the cutover
-    </td>
-    <td>
-      - Major resource consumption, potentially long preparation time
-      - Data that has expired from the input topics will be lost
-    </td>
-    <td>
-      - Certain other types of otherwise-incompatible upgrades
-      - Extremely latency-sensitive applications
-    </td>
-  </tr>
-  </tbody>
-</table>
-
+|  | Pros | Cons | When to Use |
+| --- | --- | --- | --- |
+| **Rolling Bounce** | • No application-wide downtime • Minimizes impact of issues/errors in new version • Little to no build-up of latency or lag | • Takes longer to complete • Individual tasks can still see downtime and build up latency/lag in stateful applications with insufficient standbys • Potential for unnecessary rebalancing & task movement if the timing is off or you get unlucky with rebalances | • Simple restarts • Version upgrades • Minor application changes like config updates or compatible topology upgrades |
+| **Stop and Restart** | • Fastest to perform and stabilize after • No mixed versions (e.g., upgrading across incompatible changes) • Can use application reset tool or clear state in between | • Full application downtime may be unacceptable • Records delayed during the upgrade will have large end-to-end latency • Builds up backlog that will need to be burned through on restart • Apps running at or near max capacity may struggle to catch up on the resulting lag | • Certain types of otherwise-incompatible upgrades (especially ones that require the application reset tool) • Low-throughput applications with no (or very generous) latency/downtime requirements |
+| **Blue/Green** | • Can enable incompatible upgrades without downtime by reprocessing in parallel • No downtime whatsoever • No disruption due to rebalancing/task shuffling • Should stabilize immediately after the cutover | • Major resource consumption, potentially long preparation time • Data that has expired from the input topics will be lost | • Certain other types of otherwise-incompatible upgrades • Extremely latency-sensitive applications |
 
 # Related Error Messages
 

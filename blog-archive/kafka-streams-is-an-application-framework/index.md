@@ -1,25 +1,12 @@
-import {apurva} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
+# Kafka Streams is an Application Framework
 
-import grid from "./img/grid.png"
-import highLevel from "./img/High_Level_Arch.png"
-import padme from "./img/padme.jpg"
+*Apurva Mehta · January 9, 2024 · 8 min read*
 
-export const metadata = {
-    title: "Kafka Streams is an Application Framework",
-    description: "In this post, we will dig deeper into what differentiates Kafka Streams and drives its popularity. Spoiler alert: we think its popularity stems from being akin to a powerful application framework.",
-    date: '01-09-2024',
-    slug: 'kafka-streams-is-an-application-framework',
-    authors: [apurva],
-    image: openGraphImage,
-    published: true,
-    read: 8
-}
+In this post, we will dig deeper into what differentiates Kafka Streams and drives its popularity. Spoiler alert: we think its popularity stems from being akin to a powerful application framework.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Kafka Streams is an Application Framework](opengraph-image.png)
+
+---
 
 Our previous [post](https://www.responsive.dev/blog/kafka-streams-production-use-cases) highlighted how [Kafka Streams](https://kafka.apache.org/documentation/streams/) is used in production at several well known companies for mission critical use cases. For example, it's used at Walmart to power their real-time recommendation and fraud detection systems. And it's used at Morgan Stanley to power their liquidity management platform. The list goes on, with this [GitHub repo](https://github.com/responsivedev/awesome-kafka-streams/) documenting dozens more production use cases.
 
@@ -48,9 +35,7 @@ No wonder it’s popular!
 
 ## 2. A Flexible Form Factor
 
-<div className={'flex justify-center py-6'}>
-    <img src={grid.src} alt={"Realtime Apps Grid"} className={'w-2/3'}/>
-</div>
+![Realtime Apps Grid](img/grid.png)
 
 Since Kafka Streams is a Java library that links into any app, it works seamlessly with every conceivable build, test, and deployment system that a company may use. And because it’s a library, it’s also clear who owns the application that’s deployed.
 
@@ -66,9 +51,7 @@ By making questions such as this irrelevant, Kafka Streams removes several point
 
 ## 3. A Well Factored Architecture
 
-<div className={'flex justify-center py-6'}>
-    <img src={highLevel.src} alt={"Walmart Architecture"} className={'w-2/3'}/>
-</div>
+![Walmart Architecture](img/High_Level_Arch.png)
 
 One of the key reasons why Kafka Streams can pack so much power into a fairly light weight runtime is that it delegates several hard problems to adjacent technologies like Kafka (check out this [architecture doc](https://kafka.apache.org/11/documentation/streams/architecture) for more details). What’s more, it maintains clean interfaces to each of those adjacent technologies, which means that teams can replace the underlying implementations to suit their needs.
 
@@ -91,9 +74,7 @@ So you can start easily with Kafka Streams, and as you hit limits of it’s vari
 
 # “When you look at the dark side, careful you must be. For the dark side looks back.”
 
-<div className={'flex justify-center py-6'}>
-    <img src={padme.src} alt={"Padme Meme"} className={'w-2/3'}/>
-</div>
+![Padme Meme](img/padme.jpg)
 
 Of course, no system is perfect and every design choice embodies a set of tradeoffs. In the case of Kafka Streams, we’ve seen that the default ‘Kafka as the only dependency’ implementation means that it is very easy to start with. Further, it can work very well for a lot of applications without changing anything.
 

@@ -1,36 +1,12 @@
-import {rohan} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
+# A Size for Every Stream: The Expert's Guide to Sizing Kafka Streams
 
-import consumerLag4 from './img/consumer-lag-2n-4gi.png'
-import consumerLag10 from './img/consumer-lag-2n-10Gi.png'
-import consumerLagScaleout from './img/consumer-lag-scaleout.png'
-import flowchart from './img/flowchart.png'
-import lastRebalanceSeconds from './img/last-rebalance-seconds-stable.png'
-import rebalancesScaleout from './img/rebalances-scaleout.png'
-import rocksCache from './img/rocks-cache.png'
-import scaleup from './img/scaleup.png'
-import ScreenShot from './img/Screen_Shot_2023-10-24_at_9.26.15_AM.png'
-import streamsCache from './img/streams-cache.png'
-import streamsStable from './img/streams-state-stable.png'
-import BlogCTA from "@/components/blog-cta";
+*Rohan Desai · October 25, 2023 · 15 min read*
 
-export const metadata = {
-    title: "A Size for Every Stream: The Expert's Guide to Sizing Kafka Streams",
-    description: 'Capacity planning and operating your Kafka Streams application can be quite challenging. Hopefully this guide can help you get started and point you in the right direction.',
-    date: '10-25-2023',
-    slug: 'a-size-for-every-stream',
-    authors: [rohan],
-    image: openGraphImage,
-    published: true,
-    read: 15
-}
+Capacity planning and operating your Kafka Streams application can be quite challenging. Hopefully this guide can help you get started and point you in the right direction.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![A Size for Every Stream: The Expert's Guide to Sizing Kafka Streams](opengraph-image.png)
 
-# A Size For Every Stream: The Expert’s Guide to Sizing Kafka Streams
+---
 
 Kafka Streams is all about making it easy to write applications that react to the event streams in your Apache Kafka topics. Users love its rich, functional API that makes it a breeze to go from an idea to a first version of a working application. But what about what comes next? How do you take your working prototype and configure it to handle real-world workloads? And how do you monitor it and know when and how to scale it in response to changes in those workloads? This is where many users stumble or get stuck. In this post, I'll walk you through how to approach sizing your workloads, step by step. Then, I’ll go through an example that applies these guidelines to tune and size a real application.
 
@@ -134,13 +110,9 @@ Make sure you’re running with an appropriate number of Stream Threads. If you�
 
 This is also generally a good point to start aggregating metrics (especially those we’re referring to in this document) from your application and plotting them on a dashboard to help you easily eyeball patterns and trends. This [OSS dashboard specification](https://github.com/kineticedge/kafka-streams-dashboards) from the awesome Kafka Streams community is a great starting point.
 
-<BlogCTA author={rohan} title={"Want these metrics automatically?"} className={'mb-6'}/>
-
 # Capacity Planning
 
-<div className={'flex justify-center'}>
-    <img src={flowchart.src} alt={"flowchart"}/>
-</div>
+![flowchart](img/flowchart.png)
 
 Once you’ve got your application tuned, you’ll want to determine a good node size (in CPUs, Memory, and Disk) and number of nodes to run it. To do this you’ll need to actually try replicating your production workload (or some fraction of it - but don’t forget to factor that in when deciding on your final replica count) and seeing the resources it takes.
 
@@ -164,9 +136,7 @@ In general, the default assumption tends to be that you need more compute. That�
 
 **Do I need more memory for reads?**
 
-<div className={'flex justify-center'}>
-    <img src={streamsCache.src} alt={"Caching Layers"}/>
-</div>
+![Caching Layers](img/streams-cache.png)
 
 If you’re running a stateful application, one possibility is that you don’t have enough memory to cache your working set, and Kafka Streams needs to read from disk. When reading state, Kafka Streams reads from a series of caches. It first checks its record cache, then reads from RocksDB. RocksDB has its own cache for both search metadata (indexes and bloom filters) and data. If it doesn’t find what it needs in its cache, RocksDB reads from disk. Disk reads first look in the OS page cache before doing actual IO. You want to try to get a sense for how good of a hit rate you’re getting. Unfortunately, it’s actually quite difficult to measure the hit rate specifically — so you’ll need to rely on a few indirect indicators:
 
@@ -235,9 +205,7 @@ Note that this will probably not give you the “correct” number of replicas t
 
 **Monitoring Scale-Up**
 
-<div className={'flex justify-center'}>
-    <img src={scaleup.src} alt={"Scale Up"}/>
-</div>
+![Scale Up](img/scaleup.png)
 
 Once you’ve added or replaced nodes, you’ll need to monitor the rebalancing process so that you know when the new resources are fully initialized and being used by Kafka Streams to process more records.  This is especially important for stateful applications, which replicate state to the new node(s) by creating warm up replicas of tasks, which transition to active only when sufficiently caught up — a process that can take minutes or even hours if there is lots of built up state.
 
@@ -327,15 +295,11 @@ responsive-example-v8 progress                                                  
 
 My last-rebalance time is continuously increasing for all clients, meaning that the application is not rebalancing:
 
-<div className={'flex justify-center'}>
-    <img src={lastRebalanceSeconds.src} alt={"Last Rebalance Seconds"}/>
-</div>
+![Last Rebalance Seconds](img/last-rebalance-seconds-stable.png)
 
 Finally, my applications’ state is consistently RUNNING for both nodes
 
-<div className={'flex justify-center'}>
-    <img src={streamsStable.src} alt={"Streams Stable State"}/>
-</div>
+![Streams Stable State](img/streams-state-stable.png)
 
 The application looks stable, so I’ll now try sending my 10K records/second.
 
@@ -343,9 +307,7 @@ The application looks stable, so I’ll now try sending my 10K records/second.
 
 After ramping my load up to 10K records/second, I observed that my 2 nodes are starting to lag behind for their stateful tasks. This includes both the main aggregation tasks and the standby tasks. You can see consumer lag continuously rise on our charts:
 
-<div className={'flex justify-center'}>
-    <img src={consumerLag4.src} alt={"Consumer Lag 4Gi"}/>
-</div>
+![Consumer Lag 4Gi](img/consumer-lag-2n-4gi.png)
 
 My main suspicion for this workload is that there’s not enough memory to fit all the state about my 2 million orders. To try and validate this, I took a look at memory usage and disk IO statistics.
 
@@ -386,21 +348,15 @@ As I suspected I’m hammering my disk with reads that are missing the various c
 
 If you really want, you could also check the hit ratios of the caches in Kafka Streams. Note that you will have to run with `DEBUG` level metrics. Your performance will likely decrease, but it should still give you a good idea of the hit rate. I tried this, and saw poor hit rates. Here’s an example for one task’s (1_19) reads:
 
-<div className={'flex justify-center'}>
-    <img src={streamsCache.src} alt={"Streams Cache"}/>
-</div>
+![Streams Cache](img/streams-cache.png)
 
-<div className={'flex justify-center'}>
-    <img src={rocksCache.src} alt={"RocksDB Cache"}/>
-</div>
+![RocksDB Cache](img/rocks-cache.png)
 
 My Kafka Streams cache hit rate is ~50%. I think this is misleadingly high as the cache seems to register a “hit” when flushing dirty buffers from the cache. So if I do a bunch of read-modify-writes and get a 50% hit rate, then my reads probably never were fetched from cache. My RocksDB index and filter reads are always hitting cache, but the block cache hit rate is quite low (~21%).
 
 To try and get better caching, I scaled my application’s memory up to 10Gib per pod. After doing that, I saw much better throughput and much more reasonable read rates to my EBS volume. In fact, with 10Gib the application is able to keep up with its sources.
 
-<div className={'flex justify-center'}>
-    <img src={consumerLag10.src} alt={"Consumer Lag 10Gi"}/>
-</div>
+![Consumer Lag 10Gi](img/consumer-lag-2n-10Gi.png)
 
 Though the application is able to keep up, it’s doing so just barely and is hitting the EBS volume pretty hard with writes (note that my reads have come way down):
 
@@ -429,13 +385,9 @@ To try and get to a utilization that felt more safe I decided to add a replica. 
 
 You can see my application scaling up in the following charts of consumer lag and last rebalance. You can see spikes in consumer lag (about 2 spikes every 10 minutes or so) that drain over the following minutes. What’s happening here is that Kafka Streams’ task assignor is gradually migrating stateful tasks over to the new node by assigning them as warmup tasks (the lag is always for a restore consumer), and then switching them to active tasks once they are sufficiently caught up. You can also see the application periodically rebalance until everything is migrated. These are called “probing rebalances”, which Kafka Streams does to monitor progress of the warming tasks. We know that the scale up is done when we stop seeing new restoring tasks and rebalances.
 
-<div className={'flex justify-center'}>
-    <img src={consumerLagScaleout.src} alt={"Consumer Lag Scaleout"}/>
-</div>
+![Consumer Lag Scaleout](img/consumer-lag-scaleout.png)
 
-<div className={'flex justify-center'}>
-    <img src={rebalancesScaleout.src} alt={"Rebalances Scaleout"}/>
-</div>
+![Rebalances Scaleout](img/rebalances-scaleout.png)
 
 After the scale-up, I see more reasonable load on my disk:
 
@@ -466,9 +418,7 @@ Filesystem      Size  Used Avail Use% Mounted on
 
 Finally, let’s suppose we were running this application in production and wanted to monitor for underutilization so we could scale down. To do this we’ll look at the fraction of time the application spends in `io-waittime-total` . Here’s what my application’s `io-waittime-total` looks like when I reduce load to 3000 records/second. The chart below reports the percentage of time in each minute that each consumer spends just waiting for records to arrive:
 
-<div className={'flex justify-center'}>
-    <img src={ScreenShot.src} alt={"Metrics"}/>
-</div>
+![Metrics](img/Screen_Shot_2023-10-24_at_9.26.15_AM.png)
 
 You can see that the application’s threads are sitting waiting for records about half the time. So it’s probably going to be safe to get rid of a replica to get better utilization.
 
@@ -482,7 +432,7 @@ With Responsive’s platform, you can use Kafka Streams’ awesome API to write 
 
 In our next post, we will deep dive into the inner workings of the Responsive Control plane. We’ll go in depth on how Responsive’s decoupling of storage from compute for Kafka Streams makes autoscaling much simpler, talk through its BYOC architecture, walk through the different autoscaling policies, show you how those policies use the metrics we talked about in this post to automate scaling decisions, and give you a sneak peek at our future plans.
 
-Until then, you can check out our [blog](https://www.responsive.dev/blog) and [docs](https://docs.responsive.dev/) to learn more about Responsive, [come join our Discord](https://discord.gg/HQSmfZzw) if you’d like to discuss this post or other Kafka Streams topics, and [download the SDK](/sdk) if you’d like to get started with Responsive!
+Until then, you can check out our [blog](https://www.responsive.dev/blog) and [docs](https://docs.responsive.dev/) to learn more about Responsive, [come join our Discord](https://discord.gg/HQSmfZzw) if you’d like to discuss this post or other Kafka Streams topics, and [download the SDK](https://www.responsive.dev/sdk) if you’d like to get started with Responsive!
 
 # Appendix: Diagnostic Tools
 

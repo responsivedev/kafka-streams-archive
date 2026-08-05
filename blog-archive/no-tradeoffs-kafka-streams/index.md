@@ -1,30 +1,12 @@
-import {almog} from "@/authors";
-import BlogPost from "@/components/blog-post";
-import image from "./img/image.png";
-import image1 from "./img/image 1.png";
-import image2 from "./img/image 2.png";
-import image3 from "./img/image 3.png";
-import image4 from "./img/image 4.png";
-import image5 from "./img/image 5.png";
-import image6 from "./img/image 6.png";
-import image7 from "./img/image 7.png";
-import hero from "./img/hero-image.png";
+# No Tradeoffs: Responsive Improves Kafka Streams on Every Dimension, Including Cost
 
-export const metadata = {
-  title: "No Tradeoffs: Responsive Improves Kafka Streams on Every Dimension, Including Cost",
-  description: "Responsive not only improves the reliability and scalability of your apps, it can save infra costs.",
-  date: '4-08-2025',
-  slug: 'no-tradeoffs-kafka-streams',
-  authors: [almog],
-  image: hero,
-  published: true,
-  read: 15
-}
+*Almog Gavra · April 8, 2025 · 15 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Responsive not only improves the reliability and scalability of your apps, it can save infra costs.
 
+![No Tradeoffs: Responsive Improves Kafka Streams on Every Dimension, Including Cost](img/hero-image.png)
+
+---
 
 I am certainly biased, but I think it makes no sense to run Kafka Streams without Responsive. The migration cost is nearly zero — we are [100% compatible](https://docs.responsive.dev/sdk/migrate) with the open source API. [The reliability is 10x better](https://www.responsive.dev/customers/metronome) and [there is no tradeoff to performance](https://docs.responsive.dev/sdk/async-processing). Honestly, it’s a no-brainer… until you worry about additional spend.
 
@@ -52,9 +34,7 @@ Consider this open source application (it’s also the default configuration on 
 
 Assuming it runs with 2 m5.xlarge instances, I’ve copied the breakdown of the costs here below:
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image.src} alt={"Cost Breakdown"}/>
-</div>
+![Cost Breakdown](img/image.png)
 
 ### Active Processing is 10% of your Total Cost
 
@@ -64,9 +44,7 @@ What’s worse, most of the time you have idle CPU and under-utilized memory bec
 
 It’s pretty common for an application workload to look something like this, where during weekends and nights there’s significantly less traffic than the daytime:
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image1.src} alt={"Seasonality savings"}/>
-</div>
+![Seasonality savings](img/image%201.png)
 
 In this situation, you likely need to provision enough capacity to process ~4000 events per second to account for a potential burst in traffic. The Kafka Streams calculator takes this into account, and the part of your compute allocated to processing events is split into two categories: active processing and over-provisioning.
 
@@ -86,9 +64,7 @@ For example, let’s assume that the cardinality of the keyspace doesn’t chang
 
 Unfortunately, if I’ve coupled RocksDB with my Stream Processor, I will likely need more CPU to handle the de/serialization of those 4k events/s. This forces me to scale up, but I’ve already configured my JVM size relative to my total container available memory so with every additional container I allocate I’m allocating unnecessary memory to RocksDB.
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image2.src} alt={"RocksDB Coupling"}/>
-</div>
+![RocksDB Coupling](img/image%202.png)
 
 ### High Availability at a High Price
 
@@ -115,9 +91,7 @@ Let’s summarize each component of the cost calculator, and understand how Resp
 | RocksDB Compute | 20-30% | No rocksDB is necessary. Instead we provide efficient compute via RS3 (see next section) |
 | Restore Kafka Egress | 10-20% | No restores happen with Responsive, it’s part of our architecture. |
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image3.src} alt={"Cost contributions"}/>
-</div>
+![Cost contributions](img/image%203.png)
 
 And all of this doesn’t start to consider the less quantifiable costs associated with open source Kafka Streams like the cost of lagging due to rebalances/restoration or the time spent by developers debugging incidents and shepherding deployments of stateful apps.
 
@@ -131,9 +105,7 @@ But today all that changes. Just as S3 changed the economics of distributed syst
 
 Honestly, it’s the most impressive piece of technology we’ve built to date.
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image4.src} alt={"RS3 Cost Breakdown"}/>
-</div>
+![RS3 Cost Breakdown](img/image%204.png)
 
 We discussed the economics behind it in more details in a [previous post](https://www.responsive.dev/blog/why-slatedb-for-kafka-streams), but I’ll summarize the key takeaways here.
 
@@ -151,9 +123,7 @@ This means the cost of maintaining replicated data on S3 is 1/20th of the cost o
 
 Now to be totally accurate, we also need to consider the fact that RS3 requires one replica on EBS for hot access - otherwise we’ll have a very inefficient system that frequently reads/writes to S3. But since this isn’t replicated cross-AZ, we don’t pay for the replication at all.
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image5.src} alt={"Cost Comparison"}/>
-</div>
+![Cost Comparison](img/image%205.png)
 
 ### On-Demand Capacity for Compaction
 
@@ -165,9 +135,7 @@ The implications are straightforward: you need to provision so that you have eno
 
 With RS3, all that unused capacity is unnecessary. You can schedule a compaction on a node when you need it, and leave your main serving capacity untouched.
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image6.src} alt={"Unused Capacity Ratio"}/>
-</div>
+![Unused Capacity Ratio](img/image%206.png)
 
 ## We Don’t Charge a Mystical Compute Unit
 
@@ -203,9 +171,7 @@ We *don’t* charge you for derived events, intermediate streams, or the interna
 
 This gives you the freedom to design clean, composable topologies. Break your logic into small, maintainable applications. Split functionality across teams. Responsive doesn’t penalize good architecture.
 
-<div className={'flex justify-center my-3 w-3/4 mx-auto'}>
-  <img src={image7.src} alt={"Origin EVents"}/>
-</div>
+![Origin EVents](img/image%207.png)
 
 **Number of Application Instances**
 

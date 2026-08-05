@@ -1,34 +1,16 @@
-import { sophie } from '@/authors';
-import BlogPost from '@/components/blog-post';
-import heroImage from './img/hero-image.png';
-import beforeAfter from './img/perf-improvement.png'
-import Link from "next/link";
-import ReactEmbedGist from "@/components/gist";
+# Kafka Streams 101: Optimizing your apps for maximum performance
 
-export const metadata = {
-  title: 'Kafka Streams 101: Optimizing your apps for maximum performance',
-  description: 'Learn the concepts, configs, and application design strategies to get your Kafka Streams apps running as optimally as possible.',
-  date: '03-06-2025',
-  slug: 'performance-optimization-kafka-streams-101',
-  authors: [sophie],
-  image: heroImage,
-  published: true,
-  ctaText: 'Subscribe to be notified about the next Kafka Streams 101 lesson',
-  read: 20,
-  ks101: true,
-}
+*Sophie Blee-Goldman · March 6, 2025 · 20 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Learn the concepts, configs, and application design strategies to get your Kafka Streams apps running as optimally as possible.
 
-<div className={'text-center text-sm'}>
-  **Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
-</div>
+![Kafka Streams 101: Optimizing your apps for maximum performance](img/hero-image.png)
+
+---
+
+**Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
 
 > **Learning Objective:** By the end of this Kafka Streams 101 lesson you will understand how your application decisions affect its overall performance and discover how to approach optimizing a Kafka Streams topology.
-
-<br/>
 
 # Quick Summary
 
@@ -48,7 +30,6 @@ That may sound like a dumb question, but like with any distributed system, there
 By this we just mean that this blog post is going to be focused on reducing overhead/cost for a healthy application that is already keeping up with your lag, latency, and availability needs. The first and most important thing to do with any new application is to stabilize things. We recommend checking out our [blog post on sizing & capacity planning](https://www.responsive.dev/blog/a-size-for-every-stream) for applications at this stage. Of course, many of the techniques discussed below can also be useful if you are struggling to break even and meet the requirements from the start.
 
 > 📢 Scaling up/out should be the go-to way to keep up with increasing lag or other needs — performance optimization is about what you can do to reduce the resources needed to maintain your target throughput.
-
 
 With that out of the way, let’s jump in!
 
@@ -94,70 +75,14 @@ While there is unfortunately no single knob you can turn to increase performance
 
 ## StreamsConfig
 
-<table className={'border-gray-200 mt-6 mb-6'}>
-  <thead className={'bg-black text-white'}>
-  <tr>
-    <th className={'p-3'}>Config</th>
-    <th>Recommended Value</th>
-    <th>Notes</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr className={'align-text-top'}>
-    <td className={'p-3'}><code>num.stream.threads</code></td>
-    <td className={'p-3'}>2x number of cores</td>
-    <td className={'p-3'}>
-      Follow the 2x cores rule of thumb but consider experimenting to select an appropriate value for your specific application and hardware.
-      Can be dynamically adjusted via <code>#add/removeStreamThread</code> API, but generally speaking you should configure this initially so that the node is saturated and adding more threads won’t help.
-    </td>
-  </tr>
-  <tr className={'align-text-top bg-gray-100'}>
-    <td className={'p-3'}><code>processing.guarantee</code></td>
-    <td className={'p-3'}>Whatever you need!</td>
-    <td className={'p-3'}>
-      <p >Exactly-once-semantics (EOS) has universally worse performance compared to at-least-once semantics (ALOS), but this is generally understood to be due to two indirect effects (rather than a direct impact such as the overhead from transactions):</p>
-      <ol className={'list-decimal list-inside mt-3'}>
-        <li>lower commit interval: see below</li>
-        <li>loss of state after unclean shutdown: must restore from the changelog from scratch more often, hurting stateful applications</li>
-      </ol>
-      <p className={'mt-3'}>In the end it boils down to this: only enable eos if you actually need it! You’ll have to evaluate this yourself according to your business requirements.</p>
-    </td>
-  </tr>
-  <tr className={'align-text-top'}>
-    <td className={'p-3'}><code>statestore.cache.max.bytes</code></td>
-    <td className={'p-3'}>Non-zero (and consider increasing)</td>
-    <td className={'p-3'}>
-      The bigger the cache, the greater the reduction in downstream traffic. Setting this to 0 will help you see results faster and is well-suited for testing, but this will hurt performance in applications with real traffic.
-      The default value is only 10MB so you may also want to consider increasing this for production environments.
-      Uses JVM heap memory, as opposed to RocksDB which uses off-heap. Make sure to leave some memory available to both.
-    </td>
-  </tr>
-  <tr className={'align-text-top bg-gray-100'}>
-    <td className={'p-3'}><code>commit.interval.ms</code></td>
-    <td className={'p-3'}>Consider increasing for EOS applications</td>
-    <td className={'p-3'}>
-      This config represents a tradeoff between throughput and latency. As with the cache size, it can make sense to set this to 0 in testing environments but this should not be used in production.
-      Defaults to 30s in ALOS but only 100ms in EOS, which is actually a major factor in the performance drop of EOS relative to ALOS. Consider increasing it for EOS <em>if you can afford to</em> — evaluate within the context of your specific requirements and application (eg the more subtopologies it has, the more latency accumulates from the commit interval).
-    </td>
-  </tr>
-  <tr className={'align-text-top'}>
-    <td className={'p-3'}><code>topology.optimization</code></td>
-    <td className={'p-3'}><code>all</code></td>
-    <td className={'p-3'}>
-      Be careful about changing this for existing apps, as you may need to use the application reset tool — check out our <Link href="/blog/topology-upgrades-kafka-streams-101" className={'underline'}>upgrade guide</Link> for details.
-    </td>
-  </tr>
-  <tr className={'align-text-top bg-gray-100'}>
-    <td className={'p-3'}><code>num.standby.replicas</code></td>
-    <td className={'p-3'}>&gt; 0</td>
-    <td className={'p-3'}>
-      This may not impact performance in the traditional sense, but enabling standbys is absolutely essentially for very stateful applications with a low tolerance for downtime. Of course, building up copies of the state stores means additional resource consumption in terms of both storage and bytes fetched, so like with all things: it’s a tradeoff. We just think it’s a tradeoff you should probably make.
-      (note: may also have a small impact on throughput but this is generally negligible, and the main tradeoff is in terms of storage/IO)
-    </td>
-  </tr>
-  </tbody>
-</table>
-
+| Config | Recommended Value | Notes |
+| --- | --- | --- |
+| `num.stream.threads` | 2x number of cores | Follow the 2x cores rule of thumb but consider experimenting to select an appropriate value for your specific application and hardware. Can be dynamically adjusted via `#add/removeStreamThread` API, but generally speaking you should configure this initially so that the node is saturated and adding more threads won’t help. |
+| `processing.guarantee` | Whatever you need! | Exactly-once-semantics (EOS) has universally worse performance compared to at-least-once semantics (ALOS), but this is generally understood to be due to two indirect effects (rather than a direct impact such as the overhead from transactions): 1. lower commit interval: see below 2. loss of state after unclean shutdown: must restore from the changelog from scratch more often, hurting stateful applications In the end it boils down to this: only enable eos if you actually need it! You’ll have to evaluate this yourself according to your business requirements. |
+| `statestore.cache.max.bytes` | Non-zero (and consider increasing) | The bigger the cache, the greater the reduction in downstream traffic. Setting this to 0 will help you see results faster and is well-suited for testing, but this will hurt performance in applications with real traffic. The default value is only 10MB so you may also want to consider increasing this for production environments. Uses JVM heap memory, as opposed to RocksDB which uses off-heap. Make sure to leave some memory available to both. |
+| `commit.interval.ms` | Consider increasing for EOS applications | This config represents a tradeoff between throughput and latency. As with the cache size, it can make sense to set this to 0 in testing environments but this should not be used in production. Defaults to 30s in ALOS but only 100ms in EOS, which is actually a major factor in the performance drop of EOS relative to ALOS. Consider increasing it for EOS *if you can afford to* — evaluate within the context of your specific requirements and application (eg the more subtopologies it has, the more latency accumulates from the commit interval). |
+| `topology.optimization` | `all` | Be careful about changing this for existing apps, as you may need to use the application reset tool — check out our [upgrade guide](../topology-upgrades-kafka-streams-101/index.md) for details. |
+| `num.standby.replicas` | > 0 | This may not impact performance in the traditional sense, but enabling standbys is absolutely essentially for very stateful applications with a low tolerance for downtime. Of course, building up copies of the state stores means additional resource consumption in terms of both storage and bytes fetched, so like with all things: it’s a tradeoff. We just think it’s a tradeoff you should probably make. (note: may also have a small impact on throughput but this is generally negligible, and the main tradeoff is in terms of storage/IO) |
 
 # Tips & tricks for optimizing performance
 
@@ -196,7 +121,6 @@ In general the actual operators in your topology should be dictated by your busi
 For example, by default Kafka Streams will forward a partial result for each update to a window during a windowed aggregations. However for many use cases only the final result is important, and you can boost the effect of caching with suppression. 
 
 > 🖌️ Note: you can use the actual [Suppress](https://kafka.apache.org/39/javadoc/org/apache/kafka/streams/kstream/KTable.html#suppress(org.apache.kafka.streams.kstream.Suppressed)) operator for in-memory suppression, or the [EmitStrategy](https://kafka.apache.org/39/javadoc/org/apache/kafka/streams/kstream/EmitStrategy.html) of `*ON_WINDOW_CLOSE`* for an option that leverages persistent storage.
-
 
 **Windowing**
 
@@ -242,14 +166,9 @@ While this is definitely a bummer, don’t fret, because you have more control t
 
 You can think of it like constructing a shell that hides the serialized bytes until someone comes knocking, or in this case, until someone calls an API of that class. This only works for non-primitive types but as long as you control the Serde and data model, you can implement lazy deserialization. Check out the code below for a full example of implementing a lazy serde.
 
-<div className={'p-6'}>
-  <ReactEmbedGist
-    gist={'ableegoldman/72e33804e63fc5cfbeded62b3f67deda'}
-  />
-</div>
+[View code sample on GitHub Gist](https://gist.github.com/ableegoldman/72e33804e63fc5cfbeded62b3f67deda)
 
 > 🔥 If you have large objects which are only very sparsely accessed, converting to something like [flatbuffers](https://github.com/google/flatbuffers) at the beginning of your application topology may make sense to save on Serde overhead.
-
 
 ## You don’t have to deserialize *everything*
 
@@ -540,12 +459,8 @@ While the code changes here are relatively small, the impact was powerful and im
 
 The full effect could be seen in the “time in topic” metric that these users paid close attention to, which gauged how long new events would have to wait around in the input topic before being processed (a very useful metric for many). As the graph below displays, this showed an improvement of multiple orders of magnitude!
 
-<div className={'flex flex-col justify-center items-center py-6'}>
-  <img src={beforeAfter.src} alt={"The maximum time new events had to wait in the input topic before being processed, before (top) and after (bottom) the optimization (note: the y axis is minutes in the top graph and seconds in the bottom graph)"} />
-  <div className={'flex justify-center w-3/4 text-sm'}>
-    The maximum time new events had to wait in the input topic before being processed, before (top) and after (bottom) the optimization (note: the y axis is minutes in the top graph and seconds in the bottom graph)
-  </div>
-</div>
+![The maximum time new events had to wait in the input topic before being processed, before (top) and after (bottom) the optimization (note: the y axis is minutes in the top graph and seconds in the bottom graph)](img/perf-improvement.png)
+The maximum time new events had to wait in the input topic before being processed, before (top) and after (bottom) the optimization (note: the y axis is minutes in the top graph and seconds in the bottom graph)
 
 The maximum time new events had to wait in the input topic before being processed, before (top) and after (bottom) the optimization (note: the y axis is minutes in the top graph and seconds in the bottom graph)
 

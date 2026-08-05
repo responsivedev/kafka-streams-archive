@@ -1,25 +1,14 @@
-import { apurva } from '@/authors'
-import heroImg from './img/hero-image.png'
-import BlogPost from "@/components/blog-post";
+# Founder's Letter: Responsive and the Future of Stream Processing
 
-export const metadata = {
-  title: 'Founder\'s Letter: Responsive and the Future of Stream Processing',
-  description: 'A recap of all that we\'ve built in our first 18 months as a company, and what that means for the future of stream processing.',
-  date: '12-3-2024',
-  slug: 'responsive-and-the-future-of-stream-processing',
-  authors: [apurva],
-  image: heroImg,
-  published: true,
-  read: 2
-}
+*Apurva Mehta · December 3, 2024 · 2 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+A recap of all that we've built in our first 18 months as a company, and what that means for the future of stream processing.
 
-<div class="border-l-4 border-gray-400 pl-4 italic text-gray-600 mt-7">
-  Isn’t it funny how day by day nothing changes, but when you look back, everything is different?
-</div>
+![Founder's Letter: Responsive and the Future of Stream Processing](img/hero-image.png)
+
+---
+
+Isn’t it funny how day by day nothing changes, but when you look back, everything is different?
 
 Dear data streaming community,
 
@@ -88,8 +77,6 @@ to get started. If you have questions or comments, I’d love to hear from you. 
 [X](https://x.com/apurva1618), [BlueSky](https://bsky.app/profile/apurvamehta.com), or via
 [email](mailto:apurva@responsive.dev).
 
-Let’s build together, <br/>
-Apurva <br/>
+Let’s build together, 
+Apurva 
 CEO, Responsive
-
-
