@@ -1,23 +1,12 @@
-import { apurva } from '@/authors'
-import openGraphImage from './opengraph-image.png'
-import overview from './img/overview.png'
-import future from './img/future.png'
-import BlogPost from "@/components/blog-post";
+# Introducing Responsive
 
-export const metadata = {
-    title: 'Introducing Responsive',
-    description: 'Introducing our new company, Responsive',
-    slug: 'introducing-responsive',
-    date: '09-20-2023',
-    authors: [apurva],
-    image: openGraphImage,
-    published: true,
-    read: 5
-}
+*Apurva Mehta · September 20, 2023 · 5 min read*
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Introducing our new company, Responsive
+
+![Introducing Responsive](opengraph-image.png)
+
+---
 
 I’m excited to announce that [myself](https://www.linkedin.com/in/apurvarmehta/), my
 co-founders [Almog Gavra](https://www.linkedin.com/in/agavra/) and [Rohan Desai](https://www.linkedin.com/in/rohanpd/),
@@ -98,9 +87,7 @@ managed storage and control plane services that allow you to forget about operat
 your application using the tools you love. Say goodbye to infinite rebalances and interminable state restores. Say hello
 to cloud native, instantly elastic, Kafka Streams!
 
-<div className={'flex justify-center'}>
-    <img src={overview.src} alt={"overview"}/>
-</div>
+![overview](img/overview.png)
 
 Responsive brings storage and control plane services to the Kafka Streams apps running in your environment to bring
 instant, intelligent, autoscaling. Cloud-native Kafka Streams, here we come!
@@ -136,13 +123,13 @@ applications.
 To offer these features and more, we intend to introduce an alternate runtime that integrates with the same Responsive
 Platform, finally bringing rich reactive APIs to non Java ecosystems.
 
-<img src={future.src} alt={"future"}/>
+![future](img/future.png)
 
 In the future, our Responsive runtime will sit alongside Kafka Streams and run on the Responsive Platform to deliver
 rich reactive APIs and services for all backend application developers.
 
 We are looking to engage with design partners interested in writing reactive backend programs in non-Java languages. If
-you want to partner with us on our new runtime, consider [joining our waitlist.](/sign-up-for-responsive-beta)
+you want to partner with us on our new runtime, consider [joining our waitlist.](https://www.responsive.dev/sign-up-for-responsive-beta)
 
 We’re just getting started
 --------------------------
@@ -153,6 +140,6 @@ real-time applications at scale.
 Over the coming weeks, we will dive into details about the problems we are solving with the Responsive platform over a
 three-part blog series.
 
-In the mean time, consider [joining our waitlist](/sign-up-for-responsive-beta) or drop me a line
+In the mean time, consider [joining our waitlist](https://www.responsive.dev/sign-up-for-responsive-beta) or drop me a line
 at [apurva@responsive.dev](mailto:apurva@responsive.dev) if you want to try Responsive and improve the availability,
 reliability, and manageability of your Kafka Streams applications. As mentioned earlier, it only takes minutes to move!

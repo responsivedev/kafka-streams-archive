@@ -1,32 +1,12 @@
-import {apurva} from "@/authors";
-import {sophie} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
-import {Icons} from "@/components/icons";
+# Enter the Matrix: A practical guide to exactly-once semantics in Kafka Streams
 
-import eosDiagram from './img/eos-diagram.png'
-import kafka9144 from './img/KAFKA-9144.png'
-import kafka14172 from './img/KAFKA-14172.png'
-import kafka16017 from './img/KAFKA-16017.png'
-import GetResource from "@/components/blog-resource-cta";
+*Apurva Mehta and Sophie Blee-Goldman · April 11, 2024 · 20 min read*
 
-export const metadata = {
-    title: "Enter the Matrix: A practical guide to exactly-once semantics in Kafka Streams",
-    description: 'A practical guide for developers building stateful Kafka Streams applications with exactly-once semantics enabled. It covers how exactly-once semantics work, how to tune your transactions, and how to solve common issues with the exactly-once system.',
-    date: '04-11-2024',
-    slug: 'guide-to-kafka-streams-exactly-once-transactions',
-    authors: [apurva, sophie],
-    image: openGraphImage,
-    published: true,
-    read: 20,
-    ctaText: 'Solve your Kafka Streams transaction issues!',
-    secondaryCTAText: 'The Responsive SDK solves most problems with Kafka Streams transactions by enabling remote state.',
-    getSdkCTA: true
-}
+A practical guide for developers building stateful Kafka Streams applications with exactly-once semantics enabled. It covers how exactly-once semantics work, how to tune your transactions, and how to solve common issues with the exactly-once system.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Enter the Matrix: A practical guide to exactly-once semantics in Kafka Streams](opengraph-image.png)
+
+---
 
 Exactly-once semantics in Kafka and Kafka Streams are a remarkable capability that greatly expand the types of applications developers can build. Not surprisingly, the underlying transactional system that enables exactly-once semantics is quite sophisticated. So when things go wrong, it can be very hard for developers to debug and resolve their issues. 
 
@@ -50,11 +30,11 @@ This post is intended to be the missing piece that links all the great resources
 
 | Capability |  |
 | --- | --- |
-| write atomically to multiple topics and partitions (including the consumer offsets topic) | <Icons.check className={'inline text-green-500'}/> |
-| deliver only committed messages | <Icons.check className={'inline text-green-500'}/> |
-| write atomically to non-kafka systems | <Icons.x className={'inline text-red-500'}/> |
-| write atomically to topics spanning kafka clusters | <Icons.x className={'inline text-red-500'}/> |
-| applications can identify transaction boundaries | <Icons.x className={'inline text-red-500'}/> |
+| write atomically to multiple topics and partitions (including the consumer offsets topic) | ✅ |
+| deliver only committed messages | ✅ |
+| write atomically to non-kafka systems | ❌ |
+| write atomically to topics spanning kafka clusters | ❌ |
+| applications can identify transaction boundaries | ❌ |
 
 Kafka’s transactions system is conceptually simple. Fundamentally, the main guarantee is that you can issue multiple writes to multiple topics and partitions atomically. The framework ensures that either all of the writes in a transaction are successful, or all of them are aborted. And building on top of the producer's transactions, the consumer client can be configured to read only messages from committed transactions.
 
@@ -64,18 +44,15 @@ To deliver this transactional capability, Kafka maintains transactional state pe
 
 Additionally, the Kafka protocol’s transactions require logging the state of each partition participating in a transaction via “transaction markers”, which are written to the actual data partitions (rather than the transaction log). These markers indicate when a given producer has committed or aborted a transaction, and are used with `read.committed` consumers to determine whether a batch of records should be served (in case of a commit marker) or filtered out (in case of an abort marker). If you ever see non-continuous offsets in your Kafka topic, it could be because these markers are occupying those offsets. 
 
-<GetResource/>
-
 Most of the complexity in the implementation comes from fencing zombie producers and ensuring that the state of the transaction log converges with the state in the topics participating in a transaction. A zombie producer refers to a producer that thinks it’s part of an active transaction but in reality has been superseded by another, more recent, producer with the same transaction id. This is a classic problem in distributed systems, and the Kafka transaction protocol ensures that these zombies can’t corrupt live transactions.
 
 If you are interested in the details of how the system works, the original design doc [KIP-98](https://cwiki.apache.org/confluence/display/KAFKA/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging) is still one of the best ways to understand the data and control flows. 
 
 ### Exactly-once in Kafka Streams
 
-<div className={'flex justify-center flex-col items-center gap-4'}>
-    <img src={eosDiagram.src} alt={"Kafka Streams exactly-once architecture"}/>
-    <div className={'text-muted-foreground text-sm'}> Kafka Streams can achieve read-modify-write atomicity since it uses kafka topics to commit offsets, write state changes, and write to output topics. Atomic writes to multiple topics is provided for by the Kafka transaction protocol.</div>
-</div>
+![Kafka Streams exactly-once architecture](img/eos-diagram.png)
+
+*Kafka Streams can achieve read-modify-write atomicity since it uses kafka topics to commit offsets, write state changes, and write to output topics. Atomic writes to multiple topics is provided for by the Kafka transaction protocol.*
 
 While the Kafka transaction protocol only guarantees atomic writes across multiple topics and partitions and is focused on the write-read pattern, the typical Kafka Streams application involves operations such as reading events from input topics, computing and updating application state, and writing events to output topics in a read-process-write pattern. Thus, in order to provide application developers useful semantics, Kafka Streams needs to go beyond the core Kafka transactional protocol.
 
@@ -255,10 +232,9 @@ You may be wondering: what even *is* an “InitProducerId” request? The long a
 
 In the normal case, when the broker-side transaction coordinator receives an `InitProducerId` request, it aborts any open transactions with that `transactional.id` before initializing the new one. However, there have been bugs in the implementation where the coordinator doesn’t abort an open transaction and keeps the new producer waiting forever, as shown in the sequence from [KAFKA-9144](https://issues.apache.org/jira/browse/KAFKA-9144) below. In particular, the diagram shows how a ‘zombie’ producer instance 0 can block a new producer instance 1 from completing its initialization. In the case of KAFKA-9144, producer state is erroneously deleted from the broker, which results in improper handling of the `InitProducerId` request.
 
-<div className={'flex justify-center flex-col items-center gap-4'}>
-    <img src={kafka9144.src} alt={"sequence diagram for KAFKA-9144"}/>
-    <div className={'text-muted-foreground text-sm'}> In KAFKA-9144, a zombie producer—Instance 0—can create a transaction which is open indefinitely and thus block a new producer—Instance 1—from successfully initializing..</div>
-</div>
+![sequence diagram for KAFKA-9144](img/KAFKA-9144.png)
+
+*In KAFKA-9144, a zombie producer—Instance 0—can create a transaction which is open indefinitely and thus block a new producer—Instance 1—from successfully initializing..*
 
 Hanging transactions are usually due to the Kafka Broker or Kafka Producer bugs:
 
@@ -282,10 +258,9 @@ Sometimes, when there are frequent rebalances due to application crashes or due 
 
 **Causes:**
 
-<div className={'flex justify-center flex-col items-center gap-4'}>
-    <img src={kafka16017.src} alt={"sequence diagram for KAFKA-16017"}/>
-    <div className={'text-muted-foreground text-sm'}> In KAFKA-16017, a divergence between checkpoint version and state version results in missing messages.</div>
-</div>
+![sequence diagram for KAFKA-16017](img/KAFKA-16017.png)
+
+*In KAFKA-16017, a divergence between checkpoint version and state version results in missing messages.*
 
 All Kafka Streams versions up to and including 3.4.1 suffer from bugs that can result in the violation of EOS guarantees.
 
@@ -296,10 +271,9 @@ Here are two separate bugs that manifest in the same symptoms of your state stor
 
 In both cases, multiple rebalances caused tasks to move around or flip between active and standby mode. In both cases some internal task state (eg the record cache or record collector) became stale relative to the state on disk, causing the state store to serve stale reads. 
 
-<div className={'flex justify-center flex-col items-center gap-4'}>
-    <img src={kafka14172.src} alt={"sequence diagram for KAFKA-14172"}/>
-    <div className={'text-muted-foreground text-sm'}> In KAFKA-14172, a divergence between the version of the Kafka Streams record cache and the underlying state store can result in missing messages. </div>
-</div>
+![sequence diagram for KAFKA-14172](img/KAFKA-14172.png)
+
+*In KAFKA-14172, a divergence between the version of the Kafka Streams record cache and the underlying state store can result in missing messages.*
 
 **Solutions:**
 
@@ -357,7 +331,7 @@ The last seven years have also revealed design gaps and implementation bugs that
 2. The [new threading architecture](https://cwiki.apache.org/confluence/display/KAFKA/Streams+Runtime+Architecture+with+New+Threading) in Kafka Streams will make for more stable transactions, and less disruptive timeouts, in the Kafka Streams context. This [JIRA label](https://issues.apache.org/jira/browse/KAFKA-13501?jql=labels+%3D+new-streams-runtime-should-fix) includes many common issues that should be fixed with the new threading model. The new threading system, in combination with the [V2 of Kafka Streams exactly-once semantics](https://www.slideshare.net/GuozhangWang/exactlyonce-made-easy-transactional-messaging-improvement-for-usability-and-scalability) that was shipped a few years ago, will make for more stable, scalable, and performant transactions in the Kafka Streams context.
 3. [KIP-892](https://cwiki.apache.org/confluence/display/KAFKA/KIP-892%3A+Transactional+Semantics+for+StateStores): is a major upgrade to the performance and usability of exactly-once semantics in Kafka Streams, and fixes one of the biggest shortcomings of the original implementation: unclean shutdowns needing to wipe out local state and causing potentially massive restores.
 4. Responsive also helps improve the stability and scalability of Kafka Streams applications which use exactly-once
-semantics by offloading the transaction management for state stores to a separate database via the [Responsive SDK](/sdk).
+semantics by offloading the transaction management for state stores to a separate database via the [Responsive SDK](https://www.responsive.dev/sdk).
 Our  [talk](https://www.confluent.io/events/kafka-summit-london-2024/its-a-trap-solving-restoration-with-custom-kafka-streams-state-stores/) from Kafka Summit London covers the details. At a high level, with Responsive, Kafka is simply a
 write ahead log for a remote store. By leveraging compare-and-set operations against a remote store and by using
 changelog offsets as state versions, Responsive ties neatly into Kafka’s transaction mechanism without the added

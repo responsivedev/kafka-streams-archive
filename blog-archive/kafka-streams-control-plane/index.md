@@ -1,28 +1,12 @@
-import { rohan } from '@/authors'
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
-import {Icons} from "@/components/icons";
+# Hands Free Kafka Streams Operations with Responsive Control Plane
 
-import arch from "./img/arch.png"
-import normalizeLag from "./img/normalize-lag.png"
-import scaleDown from "./img/scale-down.png"
+*Rohan Desai · November 1, 2023 · 5 min read*
 
-export const metadata = {
-    title: 'Hands Free Kafka Streams Operations with Responsive Control Plane',
-    description: "How Responsive Control Plane automatically manages Kafka Streams so you don't have to.",
-    slug: 'kafka-streams-control-plane',
-    date: '11-01-2023',
-    authors: [rohan],
-    image: openGraphImage,
-    published: true,
-    read: 5
-}
+How Responsive Control Plane automatically manages Kafka Streams so you don't have to.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Hands Free Kafka Streams Operations with Responsive Control Plane](opengraph-image.png)
 
-# How The Responsive Control Plane Simplifies Kafka Streams Operations
+---
 
 ## Background
 
@@ -63,7 +47,7 @@ For example, it observes processing lag and topic append rates and quickly scale
 
 Control specialized for managing Reactive Applications on Kafka Streams will always be able to make better decisions faster.
 
->   <Icons.bulb className={'inline'}/> A generic autoscaler can at best keep some metric like CPU utilization in range, but can't make complex decisions like over-provisioning to drain a backlog. A human operator would have to do a lot of work by hand to do the same.
+>   💡 A generic autoscaler can at best keep some metric like CPU utilization in range, but can't make complex decisions like over-provisioning to drain a backlog. A human operator would have to do a lot of work by hand to do the same.
 >
 >   Control specialized for managing Reactive Applications on Kafka Streams will always be able to make better decisions faster.
 
@@ -77,9 +61,7 @@ Similarly, there are benefits to using a company like Responsive focused on this
 
 Finally, let's dig into the details of the Responsive Control Plane, which is available today to manage your Kafka Streams applications running on Kubernetes.
 
-<div className={'flex justify-center'}>
-    <img src={arch.src} alt={"Architecture"}/>
-</div>
+![Architecture](img/arch.png)
 
 What we’ve been referring to so far as the Responsive Control Plane is really made up of a few components:
 
@@ -91,7 +73,7 @@ What we’ve been referring to so far as the Responsive Control Plane is really 
 
 Observe that all communication to Responsive Cloud is initiated by the components running in your environment. **You never have to open up your network to allow Responsive to connect in.** Today, Responsive’s Cloud services are all served over the public internet. But we plan to support private networking via PrivateLink (and similar offerings in GCP/Azure).
 
->  <Icons.bulb className={'inline'}/> Internally, the Controller continuously monitors the health of your applications by combining the received metrics and state updates and evaluating them against the policy you’ve configured in your Custom Resource. When it detects that the policy is being violated, it initiates a corrective action to bring the application back in line with the policy.
+>  💡 Internally, the Controller continuously monitors the health of your applications by combining the received metrics and state updates and evaluating them against the policy you’ve configured in your Custom Resource. When it detects that the policy is being violated, it initiates a corrective action to bring the application back in line with the policy.
 
 Internally, the Controller continuously monitors the health of your applications by combining the received metrics and state updates and evaluating them against the policy you’ve configured in your CR. When it detects that the policy is being violated, it initiates a corrective action to bring the application back in line with the policy. At present, corrective actions are limited to scaling the number of replicas. We plan to extend this to include changing task assignment, tuning performance-related configuration, and alerting you when Responsive detects a problem that’s likely caused by something else in the environment - like hitting a Kafka quota or repeated errors from another service.
 
@@ -142,13 +124,11 @@ Let’s look at two of the more interesting Diagnosers in more detail.
 
 The Expected Latency Diagnoser lets you set a goal for *expected latency.* Expected latency is the time that it would take a newly arriving record to be processed once it’s enqueued at a source topic of a Subtopology*.* The Diagnoser computes the expected latency from measurements of the committed offset and end offset of each source topic partition. From the raw measurements, the Diagnoser computes the current lag and commit rate, and combines them to estimate how long a newly arriving record will take to be processed.
 
-<div className={'flex justify-center'}>
-    <img src={normalizeLag.src} alt={"Normalize Lag"}/>
-</div>
+![Normalize Lag](img/normalize-lag.png)
 
 In our experience, most users want to set some kind of bound on consumer lag. However lag is detached from the actual consequence that you don’t want - the delay that lag causes. For example, a consumer Lag of 1000 could be noise for one application that processes each record in microseconds, but it could mean unacceptably late results for an application that takes hundreds of milliseconds to process each record. You can think of expected latency as setting a threshold on consumer lag, but expressed in a unit (time) that is actually meaningful to you.
 
-> <Icons.info className={'inline'}/> You can think of expected latency as setting a threshold on consumer lag, but expressed in a unit (time) that is actually meaningful to you.
+> ℹ️ You can think of expected latency as setting a threshold on consumer lag, but expressed in a unit (time) that is actually meaningful to you.
 
 When the expected latency violates the configured threshold, the Diagnoser initiates a scale up. By default, it scales based on the relationship between the append rate, commit rate, and the observed lag. If your application is just over the threshold, then it should scale you such that you just slightly exceed the current append rate. On the other hand, if there is a long built up backlog (for example, if your application is bootstrapping or restarting after an incident), then the Diagnoser will scale up more so that it can drain the backlog faster.
 
@@ -158,13 +138,11 @@ We have lots of exciting plans for this Diagnoser. In future updates, we plan to
 
 To complement the Expected Latency Diagnoser, the Thread Saturation Diagnoser sets a goal for how utilized your application’s threads are and scales *down* when the threads are not being utilized. You want your threads to have some reasonable minimal utilization so that you’re not wasting expensive compute resources that you don’t need.
 
-<div className={'flex justify-center'}>
-    <img src={scaleDown.src} alt={"Scale Down"}/>
-</div>
+![Scale Down](img/scale-down.png)
 
 The Diagnoser collects measurements of the total time every Kafka Streams processing thread is blocked waiting for new records to arrive when it calls `Consumer.poll`. This is time when the thread is just waiting around and is not actively doing work or blocked on some other system that is doing work on its behalf. The Diagnoser takes the total blocked time over a time window (which defaults to 5 minutes), and computes the percentage of time that it spent blocked as the blocked ratio*.* If all the application’s threads are reporting a blocked ratio over the configured threshold, then that means they are spending too much time doing nothing, and it should be safe to remove a replica because the remaining threads should have ample capacity to take on the removed threads’ work. So the Diagnoser then scales your application down to achieve better utilization to lower your costs.
 
-> <Icons.bulb className={'inline'}/> The Expected Latency diagnoser scales the application up to ensure that it never takes more than a minute to process a record appended to any sub-topology. And the Thread Saturation diagnoser is watching its back and scales down when load drops enough that the threads are 65% idle.
+> 💡 The Expected Latency diagnoser scales the application up to ensure that it never takes more than a minute to process a record appended to any sub-topology. And the Thread Saturation diagnoser is watching its back and scales down when load drops enough that the threads are 65% idle.
 
 Coming back to our example, we can now see how it all fits together to manage an application. The Expected Latency diagnoser scales the application up to ensure that it never takes more than a minute to process a record appended to any sub-topology. And the Thread Saturation diagnoser is watching its back and scales down when load drops enough that the threads are 65% idle. Finally, the min and max constraints ensure there’s always some floor on compute capacity (3 replicas) and ceiling on cost (10 replicas), respectively.
 

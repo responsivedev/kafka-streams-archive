@@ -1,27 +1,12 @@
-import {apurva} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
+# Kafka Streams Sightings in the Wild
 
-import airbnb from "./img/airbnb-arch.png"
-import michelin from "./img/michelin-arch.png"
-import walmart from "./img/walmart-arch.png"
-import morganStanely from "./img/morgan-stanley-arch.png"
-import BlogCTA from "@/components/blog-cta";
+*Apurva Mehta · December 13, 2023 · 6 min read*
 
-export const metadata = {
-    title: "Kafka Streams Sightings in the Wild",
-    description: "A sampling of some of the production use cases of Kakfa Streams from Walmart, AirBnb, Morgan Stanley, and Michelin.",
-    date: '12-13-2023',
-    slug: 'kafka-streams-production-use-cases',
-    authors: [apurva],
-    image: openGraphImage,
-    published: true,
-    read: 6
-}
+A sampling of some of the production use cases of Kakfa Streams from Walmart, AirBnb, Morgan Stanley, and Michelin.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Kafka Streams Sightings in the Wild](opengraph-image.png)
+
+---
 
 ## Introduction
 
@@ -52,9 +37,7 @@ The platform comprises two layers:
 1. The core platform services.
 2. Apps focused on specific use cases like recommendations, fraud detection, and personalization.
 
-<div className={'flex justify-center py-6'}>
-    <img src={walmart.src} alt={"Walmart Architecture"} className={'w-2/3'}/>
-</div>
+![Walmart Architecture](img/walmart-arch.png)
 
 The first Kafka Streams app ingests customer activity data and builds the identity for the customer including known demographic information, known personal information, etc. This app also aggregates customer activity events across the session. 
 
@@ -80,9 +63,7 @@ Thanks to Evergreen, their build is more stable, and if Evergreen is down it oft
 
 Airbnb adopted a classic event driven microservice pattern that models a state machine and actor model using Kafka and Kafka Streams.
 
-<div className={'flex justify-center py-6'}>
-    <img src={airbnb.src} alt={"Airbnb Architecture"} className={'w-2/3'}/>
-</div>
+![Airbnb Architecture](img/airbnb-arch.png)
 
 In the diagram above, events from source control service are ingested into Kafka and read by the `Supervisor`, which maintains an event driven state machine using Kafka Streams to track in flight merges, dependencies amongst them, etc. It’s the brains which does the ordering.
 
@@ -104,9 +85,7 @@ This is a system where exactly once guarantees are non-negotiable: mistakes can 
 
 Morgan Stanley have implemented a classic event driven microservice architecture that models common patterns like SAGAs to revert transactions that exceed configured limits as well as state-enriched events to communicate across business domains. 
 
-<div className={'flex justify-center py-6'}>
-    <img src={morganStanely.src} alt={"Morgan Stanley"} className={'w-2/3'}/>
-</div>
+![Morgan Stanley](img/morgan-stanley-arch.png)
 
 In a nutshell, transactions (credits and debits) are logged in a *transactions* topic. An *Account Balance service* aggregates credits and debits by account to maintain a current balance, which is logged to an *account balances* topic. Then a *Client Balance Service* combines the account balances across all accounts belonging to a client, and outputs the aggregate balance to a *client balances topic.* Finally a *Client Limit Monitor Service* consumes the *client balances* topic to check if the client is breaching their limit, and if so logs an event to a *Limit Breach Topic* which notifies staff who can take action. 
 
@@ -132,13 +111,9 @@ Amongst other things, their orchestrator presented a single point of failure and
 
 Michelin’s event driven architecture employs Kafka, Kafka Connect, and Stateful Kafka Streams applications running on kubernetes. 
 
-<div className={'flex justify-center py-6'}>
-    <img src={michelin.src} alt={"Michelin Architecture"} className={'w-2/3'}/>
-</div>
+![Michelin Architecture](img/michelin-arch.png)
 
 Michelin’s Kafka Streams microservices are one part of very large system that includes Kafka Connect, and numerous observability tools. If you are interested, do check out their three part blog series linked to above.
-
-<BlogCTA author={apurva} title={"Want to showcase your use case here?"} className={'mb-6'}/>
 
 ## Why Kafka Streams?
 

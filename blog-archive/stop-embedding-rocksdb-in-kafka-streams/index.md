@@ -1,26 +1,12 @@
-import { apurva } from '@/authors'
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
-import otterThrowingRock from './img/otter-throwing-rock.png'
+# Stop embedding RocksDB in your Stream Processor!
 
+*Apurva Mehta · October 15, 2024 · 4 min read*
 
-export const metadata = {
-    title: 'Stop embedding RocksDB in your Stream Processor!',
-    description: 'Why using embedded RocksDB with Kafka Streams may not be the right fit for you.',
-    date: '10-15-2024',
-    slug: 'stop-embedding-rocksdb-in-kafka-streams',
-    authors: [apurva],
-    image: otterThrowingRock,
-    published: true,
-    ctaText: 'Drop RocksDB from your Kafka Streams applications!',
-    getSdkCTA: true,
-    secondaryCTAText: 'The Responsive SDK brings remote state to Kafka Streams, allowing you to move on from RocksDB.',
-    read: 4
-}
+Why using embedded RocksDB with Kafka Streams may not be the right fit for you.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Stop embedding RocksDB in your Stream Processor!](img/otter-throwing-rock.png)
+
+---
 
 For years, popular stream processing frameworks such as Kafka Streams have used embedded RocksDB for state storage, primarily due to the efficiency of local storage and RocksDB’s ability to handle high-throughput, low-latency operations. Embedded state eliminates network overhead by keeping state local to the processing code, which makes sense if you’re aiming to optimize for latency in a distributed setting. In fact, embedded state is an architectural pattern that has become almost synonymous with modern stateful stream processing.
 
@@ -89,7 +75,7 @@ As an example, it was fairly trivial for us to implement a CLI that allows you t
 It’s for these reasons that Responsive has invested significant effort to enable Kafka Streams to use battle-hardened
 remote databases like MongoDB for state storage.
 
-The [Responsive SDK](/sdk) enables full exactly-once semantics with remote state without sacrificing performance
+The [Responsive SDK](https://www.responsive.dev/sdk) enables full exactly-once semantics with remote state without sacrificing performance
 thanks to innovations like [async processing](https://www.responsive.dev/blog/async-processing-for-kafka-streams),
 client side bloom filters, batched writes, cached reads, and more. If you are curious, our
 [talk](https://www.confluent.io/events/kafka-summit-london-2024/its-a-trap-solving-restoration-with-custom-kafka-streams-state-stores/) at Kafka Summit London 2024 explains how we are able to offer remote state stores for Kafka Streams without
@@ -103,9 +89,9 @@ However, we’ve also spoken with many teams who want to remove embedded RocksDB
 but for whom storing state in an OLTP database like MongoDB is cost-prohibitive. These teams don’t need all the flexibility that
 databases like MongoDB offer, and have thus been encouraging us to find ways to reduce the costs of managed state.
 
-These conversations have inspired us to invest in technologies like [SlateDB](/blog/why-slatedb-for-kafka-streams) and a [RS3](/rs3-storage). RS3 is a managed
+These conversations have inspired us to invest in technologies like [SlateDB](../why-slatedb-for-kafka-streams/index.md) and a [RS3](https://www.responsive.dev/rs3-storage). RS3 is a managed
 remote state store for Kafka Streams that is 10x cheaper to operate than an equivalent managed OLTP database while being
 significantly more elastic. You can learn more about how RS3 works in the [documentation](https://docs.responsive.dev/storage/rs3).
 
-With the [Responsive SDK](/sdk) and [RS3](/rs3-storage) developers have now many options to modernize their stateful stream
+With the [Responsive SDK](https://www.responsive.dev/sdk) and [RS3](https://www.responsive.dev/rs3-storage) developers have now many options to modernize their stateful stream
 processing applications built with Kafka Streams. We are very excited about what will be built with this new freedom!

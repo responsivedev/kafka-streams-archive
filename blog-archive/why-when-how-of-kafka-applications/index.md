@@ -1,31 +1,14 @@
-import { apurva } from '@/authors'
-import BlogPost from "@/components/blog-post"
-import heroImage from './img/otter-summit.png'
-import kafkaApplications from './img/Kafka_Applications.png'
-import kafkaStreamsArch from './img/Kafka_Streams_3D_Right_Rotate.png'
-import ReactEmbedGist from "@/components/gist";
-import Link from "next/link";
+# The Why, When, and How of Kafka Applications
 
-export const metadata = {
-title: 'The Why, When, and How of Kafka Applications',
-description: 'Understand why and when to build applications on Kafka, your technology choices for building Kafka applications, when it makes sense to adopt Kafka Streams for your applications, and how to succeed with Kafka Streams.',
-date: '02-04-2025',
-slug: 'why-when-how-of-kafka-applications',
-authors: [apurva],
-image: heroImage,
-published: true,
-ctaText: 'Subscribe to be notified about the next Kafka Streams 101 lesson',
-read: 8,
-ks101: true,
-}
+*Apurva Mehta · February 4, 2025 · 8 min read*
 
-export default function Layout({children}) {
-return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Understand why and when to build applications on Kafka, your technology choices for building Kafka applications, when it makes sense to adopt Kafka Streams for your applications, and how to succeed with Kafka Streams.
+
+![The Why, When, and How of Kafka Applications](img/otter-summit.png)
+
+---
 
 > **Learning Objective:** By the end of this Kafka Streams 101 lesson you will understand what makes Apache Kafka a great base layer for applications, the technology landscape for building Kafka applications, and when to use Kafka Streams for your applications.
-
-<br />
 
 # Quick Summary
 
@@ -93,145 +76,20 @@ This section will try to shed light on the different types of technologies you c
 
 At a very high level, there are five broad categories of technologies you can use to build your Kafka applications upon. Four of these technology categories are presented below, with the fifth being plain old Kafka clients.
 
-<div className={'flex flex-col items-center justify-center py-6'}>
-  <div className={'w-3/4'}>
-    <img src={kafkaApplications.src} alt={"The technology landscape for Kafka applications"} />
-  </div>
-  <div className={'flex justify-center w-3/4 text-sm'}>
-    *Note: the technologies mentioned above are not intended to be an exhaustive list of technologies which might fit into each category.*
-  </div>
-
-</div>
-
+![The technology landscape for Kafka applications](img/Kafka_Applications.png)
+*Note: the technologies mentioned above are not intended to be an exhaustive list of technologies which might fit into each category.*
 
 ## The 100ft view
 
 As you may expect, there is no one size fits all when it comes to technologies in the Kafka application space. In fact, there are many companies which employ multiple of these technologies to solve different problems. The table below is intended to educate you on the tradeoffs of each technology and thus help you choose the right tool for the job at hand.
 
-
-<table className={'border-gray-200 mt-6 mb-6'}>
-  <thead className={'bg-black text-white'}>
-  <tr>
-    <th className={'p-3'}>Technology</th>
-    <th>Pros</th>
-    <th>Cons</th>
-    <th>Best-fit use cases</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr className={'align-text-top'}>
-    <td className={'font-medium p-3'}>Kafka Clients.</td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li> Java Clients are bundled with Apache Kafka. </li>
-        <li> Wide language support with librdkafka. </li>
-        <li> Embedded in your app for maximum flexibility. </li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li> Steep learning curve: Low-level APIs leave most of the work to the application developers for things like transactions or HA.</li>
-        <li> Doesn’t model streaming concepts like time, late arriving data, etc.</li>
-        <li> No native support for stateful processing.</li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>Ideal for simpler applications, especially those that don’t require stateful streaming operations.</li>
-      </ul>
-    </td>
-  </tr>
-  <tr className={'align-text-top bg-gray-100'}>
-    <td className={'font-medium p-3'}>Embedded Stream Processing Frameworks, specifically Kafka Streams.</td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li> Kafka Streams is bundled with, and naturally extends, Apache Kafka.</li>
-        <li> Library form factor embeds in your application for maximum flexibility and clean operations.</li>
-        <li> Production-grade stateful stream processing apis like joins and aggregations.</li>
-        <li> Time is modeled in the API.</li>
-        <li> Optimized for high throughput Kafka applications.</li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li> JVM only. </li>
-        <li> Kafka-only: your data needs to be flowing in Kafka to be correctly processed by Kafka Streams.</li>
-        <li> Embedded form factor means each team needs to develop expertise in deploying/operating the apps. </li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li> Perfect for application developers building mission critical applications and pipelines since it’s easy to get started, has a full featured api, has a clean operational model, and natively integrates into your application ecosystem. </li>
-      </ul>
-    </td>
-  </tr>
-  <tr className={'align-text-top'}>
-    <td className={'font-medium p-3'}>Cluster-oriented Stream Processing Frameworks, specifically Apache Flink.</td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>Dedicated frameworks with native solutions for state, load distribution etc.</li>
-        <li>Typically supports multiple languages like Python, Java, SQL.</li>
-        <li>Support the full suite of stateful stream processing APIs.</li>
-        <li>Typically also include connectors to interface with systems outside of Kafka.</li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>Cluster/job oriented execution model results in relatively less flexibility for the app developer. eg. special measures need to be taken to integrate with your CI/CD, observability stack, etc.</li>
-        <li>Operational ownership typically split between application teams and a platform team running a cluster.</li>
-        <li>Since they solve many problems already solved by Kafka, these systems are typically a large investment on top of Kafka.</li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>If you have a platform team capable of administering and scaling these clusters, these systems work well for data engineers and data scientists building streaming ETL and streaming analytics pipelines.</li>
-      </ul>
-    </td>
-  </tr>
-  <tr className={'align-text-top bg-gray-100'}>
-    <td className={'p-3 font-medium'}>Streaming Databases (eg. ksqlDB, RisingWave, Materialized).</td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>Familiar SQL interface to model concepts like streaming joins and aggregations.</li>
-        <li>Incremental computation models mean very efficient maintenance of materialized views.</li>
-        <li>Many solutions are wire-compatible with postgres, thus bridging the gap between OLTP and streaming systems.</li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>SQL only can be a non-starter for many application use cases, since imperative application logic is really hard to model in relational-SQL.</li>
-        <li>Many of these systems have different streaming SQL dialects which can present challenges to people used to traditional SQL.</li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>These systems can be effective when you need to scale up OLTP systems for analytics queries or even as high traffic read replicas of your OLTP databases. Streaming databases can be perfect for simpler ETL jobs that are well expressed in SQL.</li>
-      </ul>
-    </td>
-  </tr>
-  <tr className={'align-text-top'}>
-    <td className={'p-3 font-medium'}>Real-time OLAP (eg. Apache Pinot, Clickhouse, Apache Druid).</td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>Can ingest, index, and execute sophisticated ad-hoc queries against high throughput event data with low latency.</li>
-        <li>Typically simplified-SQL interfaces.</li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li> Typically don’t support transactional semantics, making it harder to model applications.</li>
-        <li> More simplified SQL makes it harder to write apps against. </li>
-      </ul>
-    </td>
-    <td className={'p-3'}>
-      <ul className={'list-disc'}>
-        <li>These are more competitive with data warehousing than traditional application oriented stream processing. These systems can be a good choice for implementing <Link href="https://en.wikipedia.org/wiki/Extract,_load,_transform" className={'underline'}>ELT</Link> patterns.</li>
-      </ul>
-    </td>
-  </tr>
-  </tbody>
-</table>
-
+| Technology | Pros | Cons | Best-fit use cases |
+| --- | --- | --- | --- |
+| Kafka Clients. | • Java Clients are bundled with Apache Kafka. • Wide language support with librdkafka. • Embedded in your app for maximum flexibility. | • Steep learning curve: Low-level APIs leave most of the work to the application developers for things like transactions or HA. • Doesn’t model streaming concepts like time, late arriving data, etc. • No native support for stateful processing. | • Ideal for simpler applications, especially those that don’t require stateful streaming operations. |
+| Embedded Stream Processing Frameworks, specifically Kafka Streams. | • Kafka Streams is bundled with, and naturally extends, Apache Kafka. • Library form factor embeds in your application for maximum flexibility and clean operations. • Production-grade stateful stream processing apis like joins and aggregations. • Time is modeled in the API. • Optimized for high throughput Kafka applications. | • JVM only. • Kafka-only: your data needs to be flowing in Kafka to be correctly processed by Kafka Streams. • Embedded form factor means each team needs to develop expertise in deploying/operating the apps. | • Perfect for application developers building mission critical applications and pipelines since it’s easy to get started, has a full featured api, has a clean operational model, and natively integrates into your application ecosystem. |
+| Cluster-oriented Stream Processing Frameworks, specifically Apache Flink. | • Dedicated frameworks with native solutions for state, load distribution etc. • Typically supports multiple languages like Python, Java, SQL. • Support the full suite of stateful stream processing APIs. • Typically also include connectors to interface with systems outside of Kafka. | • Cluster/job oriented execution model results in relatively less flexibility for the app developer. eg. special measures need to be taken to integrate with your CI/CD, observability stack, etc. • Operational ownership typically split between application teams and a platform team running a cluster. • Since they solve many problems already solved by Kafka, these systems are typically a large investment on top of Kafka. | • If you have a platform team capable of administering and scaling these clusters, these systems work well for data engineers and data scientists building streaming ETL and streaming analytics pipelines. |
+| Streaming Databases (eg. ksqlDB, RisingWave, Materialized). | • Familiar SQL interface to model concepts like streaming joins and aggregations. • Incremental computation models mean very efficient maintenance of materialized views. • Many solutions are wire-compatible with postgres, thus bridging the gap between OLTP and streaming systems. | • SQL only can be a non-starter for many application use cases, since imperative application logic is really hard to model in relational-SQL. • Many of these systems have different streaming SQL dialects which can present challenges to people used to traditional SQL. | • These systems can be effective when you need to scale up OLTP systems for analytics queries or even as high traffic read replicas of your OLTP databases. Streaming databases can be perfect for simpler ETL jobs that are well expressed in SQL. |
+| Real-time OLAP (eg. Apache Pinot, Clickhouse, Apache Druid). | • Can ingest, index, and execute sophisticated ad-hoc queries against high throughput event data with low latency. • Typically simplified-SQL interfaces. | • Typically don’t support transactional semantics, making it harder to model applications. • More simplified SQL makes it harder to write apps against. | • These are more competitive with data warehousing than traditional application oriented stream processing. These systems can be a good choice for implementing [ELT](https://en.wikipedia.org/wiki/Extract,_load,_transform) patterns. |
 
 # Why pick Kafka Streams: a deeper dive
 
@@ -251,31 +109,17 @@ It’s important to note that this unparalleled flexibility is no accident. In f
 
 Thus Kafka Streams at its core can be thought of as a lightweight streaming runtime which schedules and executes user code via rich stateful stream processing APIs. Everything else is delegated to pluggable subsystems or Kafka protocols:
 
-<div className={'flex flex-col items-center justify-center py-6'}>
-  <div className={'w-3/4 mb-4'}>
-    <img src={kafkaStreamsArch.src} alt={"The technology landscape for Kafka applications"} />
-  </div>
-  <div className={'text-sm w-3/4'}>
-    *Kafka Streams has a compact core which provides its API, streaming operators, and does local thread scheduling. Everything else is provided by Kafka through pluggable components. This means Kafka Streams can be modified and upgraded in-place without requiring changes to your application code or architecture.*
-  </div>
-</div>
-
+![The technology landscape for Kafka applications](img/Kafka_Streams_3D_Right_Rotate.png)
+*Kafka Streams has a compact core which provides its API, streaming operators, and does local thread scheduling. Everything else is provided by Kafka through pluggable components. This means Kafka Streams can be modified and upgraded in-place without requiring changes to your application code or architecture.*
 
 > Kafka Streams’ composability enables it to remain embedded in your application while being extended and upgraded without needing you to rewrite or rearchitect your applications.
 > So if you are an application developer using a JVM language and are committed to building applications on Kafka, it’s hard to argue against choosing Kafka Streams as the foundation for your Kafka Applications thanks to its power, flexibility, and extensibility.
-
 
 ## A Kafka Streams Example
 
 The example below gives you a taste of how compact, powerful, and natural Kafka Streams’ API. It also exemplifies the ease with with you can integrate Kafka Streams into your app. It’s really just a library which brings stateful stream processing to your application!
 
-<div className={'p-6'}>
-  <ReactEmbedGist
-    gist={'apurvam/50e7d774be1a26b887b1d9d4ef46d730'}
-  />
-</div>
-
-
+[View code sample on GitHub Gist](https://gist.github.com/apurvam/50e7d774be1a26b887b1d9d4ef46d730)
 
 # What’s next: your guide to summiting the world of Kafka Streams
 

@@ -1,23 +1,13 @@
-import {apurva} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
+# Live Q&A: Scaling Event Driven Architectures with Metronome
 
+*Apurva Mehta · November 13, 2024 · 2 min read*
 
-export const metadata = {
-    title: "Live Q&A: Scaling Event Driven Architectures with Metronome",
-    description: "Tune in for an in-depth conversation with Casey Crites, Founding Engineer at Metronome about how Metronome built and scaled their Kafka Streams based ingestion pipeline to deliver advanced real time billing features to companies like OpenAI, Nvidia, and more.",
-    date: '11-13-2024',
-    slug: 'metronome-kafka-streams-webinar-q-and-a',
-    authors: [apurva],
-    image: openGraphImage,
-    published: true,
-    read: 2
-}
+Tune in for an in-depth conversation with Casey Crites, Founding Engineer at Metronome about how Metronome built and scaled their Kafka Streams based ingestion pipeline to deliver advanced real time billing features to companies like OpenAI, Nvidia, and more.
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
- 
+![Live Q&A: Scaling Event Driven Architectures with Metronome](opengraph-image.png)
+
+---
+
 [Metronome](https://www.metronome.com)’s platform makes billing fast, flexible, and frictionless, enabling customers
  like OpenAI, NVIDIA, and Databricks to launch products rapidly, adopt any pricing model with ease, and streamline their revenue
 operations.
@@ -31,12 +21,9 @@ journey from day 0 to the present, and the lessons learned along the way.
 
 > Watch the webinar [on-demand](https://www.responsive.dev/resources/metronome-kafka-streams-interview) and [join Casey and Almog](https://www.responsive.dev/resources/metronome-q-and-a) for a live Q&A on Thursday, 12 December 2024 at 930am PST.
 
-
 Some of the topics discussed include:
 
 * Why did Metronome choose Kafka and Kafka Streams to drive their mission-critical ingestion pipeline?
 * What were the design tradeoffs they had to make as they built out their architecture and why?
 * How did they implement techniques like blue/green deployments?
 * and more
-
-

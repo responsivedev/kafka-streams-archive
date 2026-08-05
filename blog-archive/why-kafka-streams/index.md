@@ -1,28 +1,12 @@
-import { almog } from '@/authors'
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
-import availability from './img/Availability.png'
-import optimize from './img/Optimize.png'
-import complete from './img/Complete.png'
-import runtime from './img/Runtime.png'
-import shuffle from './img/Shuffle.png'
-import topo_optimize from './img/Topo_Optimize.png'
-import blog_topo from './img/blog-topology.png'
+# So You Want to Write a Stream Processor? Beware of the Duck Syndrome.
 
-export const metadata = {
-    title: 'So You Want to Write a Stream Processor? Beware of the Duck Syndrome.',
-    description: 'Why should you use a stream processing framework like Kafka Streams instead of building on top of Kafka Producer/Consumers.',
-    date: '06-26-2024',
-    slug: 'why-kafka-streams',
-    authors: [almog],
-    image: openGraphImage,
-    published: true,
-    read: 15
-}
+*Almog Gavra · June 26, 2024 · 15 min read*
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Why should you use a stream processing framework like Kafka Streams instead of building on top of Kafka Producer/Consumers.
+
+![So You Want to Write a Stream Processor? Beware of the Duck Syndrome.](opengraph-image.png)
+
+---
 
 Have you heard of the “duck syndrome”? The concept describes a duck appearing to glide effortlessly across a stream but paddling furiously under the water’s surface and is typically used to describe someone that presents as relaxed but is working tirelessly to maintain that appearance.
 
@@ -52,9 +36,7 @@ These table items forms the basis of a stream processing technology. If you are 
 
 ## Step 1: Build the Runtime
 
-<div className={'flex justify-center py-6'}>
-    <img src={runtime.src} alt={"Legend"} className={'w-2/3'}/>
-</div>
+![Legend](img/Runtime.png)
 The runtime covers the first two functional attributes (**F1, F2**) in the table above.
 
 This core is implemented as a `poll/process/commit` loop. If you were writing this loop from scratch, you would need to answer the following questions:
@@ -78,7 +60,7 @@ Here’s a non-exhaustive list of processors that are available out-of-the-box w
 | Aggregations | Aggregations are when the DSL begins to increase in complexity. An aggregate needs to define what it aggregates on (the key), a potential window to aggregate within and the aggregation logic. Kafka Streams handles all this for a myriad of different types of aggregations (see [this blog](https://www.confluent.io/blog/windowing-in-kafka-streams/) as an overview) and ensures correct and deterministic results. |
 | Joins | Just as, if not more, complicated than correctly implementing aggregations, joins are the focus area of much academic research. Kafka Streams implements many different types of joins, each of which requires its own distinct and complex implementation (up to the infamous Foreign-Key joins, which you can read about in full gory detail [here](https://www.confluent.io/blog/data-enrichment-with-kafka-streams-foreign-key-joins/)).  |
 
-Getting the semantics correct for these operations requires years of dedication and bug-bashing. You can see just some examples of discussions on Kafka Streams’ implementation with these tickets, which have since been resolved or determined to be correct semantics: [KAFKA-10847](https://issues.apache.org/jira/browse/KAFKA-10847), [KAFKA-7595](https://issues.apache.org/jira/browse/KAFKA-7595) and [KAFKA-15417](https://issues.apache.org/jira/browse/KAFKA-15417).<sup>1</sup>
+Getting the semantics correct for these operations requires years of dedication and bug-bashing. You can see just some examples of discussions on Kafka Streams’ implementation with these tickets, which have since been resolved or determined to be correct semantics: [KAFKA-10847](https://issues.apache.org/jira/browse/KAFKA-10847), [KAFKA-7595](https://issues.apache.org/jira/browse/KAFKA-7595) and [KAFKA-15417](https://issues.apache.org/jira/browse/KAFKA-15417).[1]
 
 This table is just the current state of the DSL! There are open suggestions ([1](https://cwiki.apache.org/confluence/display/KAFKA/KIP-655%3A+Windowed+Distinct+Operation+for+Kafka+Streams+API), [2](https://cwiki.apache.org/confluence/display/KAFKA/KIP-675%3A+Convert+KTable+to+a+KStream+using+the+previous+value), …) for expanding the surface area to ensure that users have access to correctly implemented primitives for writing stream processing applications.
 
@@ -118,9 +100,7 @@ Points to consider if you were to build your own stream processor:
 
 In a distributed system, data is partitioned across multiple instances. Some processing operations (such as joins and aggregations) require access to multiple datum that may not be available on the local machine that’s executing the processing step.
 
-<div className={'flex justify-center py-6'}>
-    <img src={shuffle.src} alt={"Shuffle"} className={'w-5/6'}/>
-</div>
+![Shuffle](img/Shuffle.png)
 A stream processor has two options for working around this: (1) issue an RPC every time data is needed from another node or (2) shuffle the data so that requisite data is co-partitioned (present on the local instance). Kafka streams takes the second approach, which generally performs much better at high throughput, but implementing it correctly is challenging.
 
 Kafka Streams, yet again, relies on Kafka to handle this problem for it by creating and managing internal “repartition” topics that change the key of underlying data to ensure that the aggregation or join key is also the partition key. This handles backpressure, routing and transactionality at the cost of managing an additional topic.
@@ -135,9 +115,7 @@ There are also some non-standard reasons why you main want to trigger a commit. 
 
 ## Step 2: Make it Highly Available
 
-<div className={'flex justify-center py-6'}>
-    <img src={availability.src} alt={"Availability"} className={'w-2/3'}/>
-</div>
+![Availability](img/Availability.png)
 Since Kafka Streams integrates only with Kafka as the message broker, it can leverage a significant portion of the work that was invested into the consumer group protocol, which ensures that all partitions are assigned and handles offset management so that a new instance can pick up where an old one left off.
 
 The main mechanism for high availability (**N2**) in Kafka Streams is rebalancing, the ability to move partitions from one instance to another. This mechanism is fraught with tension between two conflicting goals:
@@ -178,9 +156,7 @@ Answering when and how a rebalance should happen is the starting point — the m
 
 ## Step 3: Optimize
 
-<div className={'flex justify-center py-6'}>
-    <img src={optimize.src} alt={"Optimize"} className={'w-2/3'}/>
-</div>
+![Optimize](img/Optimize.png)
 After building the foundations and ensuring you stay afloat, the next step is to figure out how to paddle faster and more efficiently.
 
 ### Can my topology be optimized?
@@ -189,9 +165,7 @@ Building a topology (as discussed in the core runtime section) is the first step
 
 Identifying the best place to include a data shuffle is as much an art as a science. To read more about how Kafka Streams accomplishes this, see [this blog](https://www.confluent.io/blog/optimizing-kafka-streams-applications/).
 
-<div className={'flex justify-center py-6'}>
-    <img src={topo_optimize.src} alt={"Optimize Topology"} className={'w-2/3'}/>
-</div>
+![Optimize Topology](img/Topo_Optimize.png)
 ### How can my processor effectively utilize multi-threading?
 
 Kafka Streams splits units of work into “Stream Tasks” and assigns these tasks across the available “Stream Threads” on the instance. Since each task is independent, threads can utilize their underlying CPU efficiently by polling data for multiple tasks and processing only the tasks that have data available to process.
@@ -204,9 +178,7 @@ Leveraging this can reduce the amount of data that is unnecessarily sent to futu
 
 ## Step 4: Complete the Supporting Cast
 
-<div className={'flex justify-center py-6'}>
-    <img src={complete.src} alt={"Complete"} className={'w-2/3'}/>
-</div>
+![Complete](img/Complete.png)
 So you’ve paddled this far along the pond and your stream processor is almost ready to go! Just as you exit the pond, however, you notice that you’ve reached a lake — your paddling has only just begun.
 
 To take your technology to production, you need to complete the supporting cast. Kafka Streams comes out of the box with all of the following functionality, each of which is critical in its own right for effective usage in mission-critical infrastructure:
@@ -240,9 +212,7 @@ Topologies:
 
 This computation can be fed into an excellent [open source visualizer](https://github.com/zz85/kafka-streams-viz) and displayed in an easy to understand fashion:
 
-<div className={'flex justify-center py-6'}>
-    <img src={blog_topo.src} alt={"Legend"} className={'w-1/4'}/>
-</div>
+![Legend](img/blog-topology.png)
 
 ### How can I inspect the state in my application?
 
@@ -266,10 +236,6 @@ Kafka Streams, much like the seemingly calm duck, can present a tranquil appeara
 
 Instead of shying away from the complexity introduced by innovation, we’ve embraced Kafka Streams as the foundation for Responsive — having built the mechanism that keeps the duck afloat, we’re not so eager to build it from scratch all over again!
 
-<br/>
-<hr/>
-<br/>
+---
 
-<div className={'text-sm'}>
-    <sup>1</sup> June 27th, 2024 Update: The original post had links to some tickets that were only somewhat relevant. Thanks to Matthias J. Sax for suggesting these new, more relevant tickets!
-</div>
+[1] June 27th, 2024 Update: The original post had links to some tickets that were only somewhat relevant. Thanks to Matthias J. Sax for suggesting these new, more relevant tickets!

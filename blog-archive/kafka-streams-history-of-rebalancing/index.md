@@ -1,36 +1,12 @@
-import {sophie} from "@/authors";
-import openGraphImage from './opengraph-image.png'
-import BlogPost from "@/components/blog-post";
+# Kafka Streams and Rebalancing Through the Ages
 
-import t2012 from './img/2012.png'
-import t2014 from './img/2014.png'
-import t2015 from './img/2015.png'
-import t2018 from './img/2018.png'
-import t2019 from './img/2019.png'
-import t2020 from './img/2020.png'
-import t2023 from './img/2023.png'
-import generation1 from './img/generation_1.png'
-import generation2 from './img/generation_2.png'
-import generation3 from './img/generation_3.png'
-import generation3Sticky from './img/generation_3_sticky.png'
-import meme from './img/meme.png'
+*Sophie Blee-Goldman · November 30, 2023 · 30 min read*
 
-export const metadata = {
-    title: "Kafka Streams and Rebalancing Through the Ages",
-    description: "A history lesson on how the rebalance protocol in Apache Kafka has evolved over the years, and why. Distributed systems enthusiasts will love this. ",
-    date: '11-30-2023',
-    slug: 'kafka-streams-history-of-rebalancing',
-    authors: [sophie],
-    image: openGraphImage,
-    published: true,
-    read: 30
-}
+A history lesson on how the rebalance protocol in Apache Kafka has evolved over the years, and why. Distributed systems enthusiasts will love this. 
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![Kafka Streams and Rebalancing Through the Ages](opengraph-image.png)
 
-# Kafka Streams and Rebalancing through the Ages
+---
 
 In our previous blog post “[Defense Against the Dart Art of
 Rebalancing](https://www.responsive.dev/blog/guide-to-kafka-streams-rebalancing)”,
@@ -64,9 +40,7 @@ history lesson doesn’t come with a final exam.
 
 ## Before the Big Bang
 
-<div className={'flex justify-center'}>
-    <img src={t2012.src} alt={"2012"} width={500}/>
-</div>
+![2012](img/2012.png)
 
 Let’s jump right in! We can answer the first question right away: rebalancing
 has been around since the advent of the consumer group. A quick search for
@@ -110,9 +84,7 @@ would recognize it as today.
 
 ## The Modern Era
 
-<div className={'flex justify-center'}>
-    <img src={t2014.src} alt={"2014"} width={500}/>
-</div>
+![2014](img/2014.png)
 
 It all started with the client rewrite: in truly ancient times, the consumer
 and producer client that most people are familiar with did not exist. But by
@@ -166,15 +138,11 @@ well in the days of on-prem servers is not perfectly suited for a world that’s
 migrated to cloud environments. And so, we’re just now seeing the modern
 rebalancing protocol begin to step aside and make way for the next generation.
 
-<div className={'flex justify-center'}>
-    <img src={meme.src} alt={"The Future is Now"}/>
-</div>
+![The Future is Now](img/meme.png)
 
 ## The Future is Now
 
-<div className={'flex justify-center'}>
-    <img src={t2023.src} alt={"2023"} width={500}/>
-</div>
+![2023](img/2023.png)
 
 If you’ve been paying attention to the Kafka dev community or attended a recent
 Kafka Summit, odds are you’ve heard about [KIP-848: The Next Generation of the
@@ -255,9 +223,7 @@ it — and what we may have sacrificed for it.
 
 ### Improvement 0: the StreamsPartitionAssignor
 
-<div className={'flex justify-center'}>
-    <img src={t2015.src} alt={"2015"} width={500}/>
-</div>
+![2015](img/2015.png)
 
 *Problem: Streams is ~~special~~ stateful*
 
@@ -302,9 +268,7 @@ about that partition-to-consumer affinity? What can we actually do with our
 custom assignor to address this, and avoid — or at least minimize — the amount
 of downtime after a rebalance due to the restoration of changelog state?
 
-<div className={'flex justify-center'}>
-    <img src={generation1.src} alt={"Generation 1"} height={400} width={400}/>
-</div>
+![Generation 1](img/generation_1.png)
 
 Let’s start with a concrete example. Imagine an application with a single
 subtopology, which performs some stateful operation on an input topic with 6
@@ -316,9 +280,7 @@ up state from the changelog for each of its assigned tasks before it can start
 processing. But that’s ok for now — that kind of downtime is just unavoidable
 for a newly-started consumer (or is it?).
 
-<div className={'flex justify-center'}>
-    <img src={generation2.src} alt={"Generation 2"} height={400} width={400}/>
-</div>
+![Generation 2](img/generation_2.png)
 
 So now we have three tasks assigned to each consumer. Let’s say consumer B has
 tasks `0_1`, `0_2`, and `0_3`, and A has `0_4`, `0_5`, and `0_6`
@@ -339,9 +301,7 @@ consumer B: 0_3, 0_4
 consumer C: 0_1, 0_2
 ```
 
-<div className={'flex justify-center'}>
-    <img src={generation3.src} alt={"Generation 3"}  height={400} width={400}/>
-</div>
+![Generation 3](img/generation_3.png)
 
 Notice task `0_4` used to be on consumer A and now is suddenly owned by
 consumer B! Sometimes partition migration is just unavoidable, but that’s not
@@ -358,9 +318,7 @@ In other words, the assignor should try and make the assignment “sticky” —
 minimize the number of partitions that are moved from one consumer to another
 during a rebalance.
 
-<div className={'flex justify-center'}>
-    <img src={generation3Sticky.src} alt={"Generation 3 Sticky"} height={400} width={400}/>
-</div>
+![Generation 3 Sticky](img/generation_3_sticky.png)
 
 And thus sticky task assignment came to Kafka Streams. While the update may
 sound small, it involved a lot more than just an algorithm change. In fact, the
@@ -448,9 +406,7 @@ But the restore-from-scratch might cost you more than a few bucks if it leads to
 
 ### Improvement 3: poll duration
 
-<div className={'flex justify-center'}>
-    <img src={t2018.src} alt={"2018"} width={500}/>
-</div>
+![2018](img/2018.png)
 
 *Problem: Don’t want metadata updates to disrupt processing:*
 
@@ -516,9 +472,7 @@ example).
 
 ### Improvement 4: static membership
 
-<div className={'flex justify-center'}>
-    <img src={t2019.src} alt={"2019"} width={500}/>
-</div>
+![2019](img/2019.png)
 
 *Problem: Don’t want unnecessary rebalances to disrupt processing*
 
@@ -618,9 +572,7 @@ intentionally trigger a rebalance from Streams.
 
 ### Improvement 6: warmup tasks
 
-<div className={'flex justify-center'}>
-    <img src={t2020.src} alt={"2020"} width={500}/>
-</div>
+![2020](img/2020.png)
 
 *Problem: Don’t want scaling out to disrupt processing*
 
@@ -814,12 +766,12 @@ warm up on certain nodes. We need the state to just be there already; to be
 highly available. We need remote state stores.
 
 This is one of the driving insights behind our work at Responsive. That's why our first product,
-the [Responsive SDK](/sdk), allows you to drop RocksDB from your application nodes,
+the [Responsive SDK](https://www.responsive.dev/sdk), allows you to drop RocksDB from your application nodes,
 making them stateless by swapping out RocksDB with remote state stores. Watch my talk from
 [Kafka Summit London 2024](https://www.confluent.io/events/kafka-summit-london-2024/its-a-trap-solving-restoration-with-custom-kafka-streams-state-stores/)
 to learn about all the innovations that enable exactly-once and fast remote stores.
 You may also read my blog post on
-[async processing](/blog/async-processing-for-kafka-streams) to dive deeper into
+[async processing](../async-processing-for-kafka-streams/index.md) to dive deeper into
 how we deliver remote state storage without sacrificing throughput.
 
 Stateless tasks obviate the need for standby and warmup

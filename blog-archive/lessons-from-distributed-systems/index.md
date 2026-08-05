@@ -1,21 +1,12 @@
-import {almog, apurva} from "@/authors";
-import BlogPost from "@/components/blog-post";
-import heroImage from './img/hero-image.png'
+# Four Horsemen: Lessons from Distributed System Apocalypse
 
-export const metadata = {
-  title: "Four Horsemen: Lessons from Distributed System Apocalypse",
-  description: "Learning from history is the best way to guide future decisions. This post examines four architectural mistakes that distributed systems can make that prevents their longterm success.",
-  date: '3-31-2025',
-  slug: 'lessons-from-distributed-systems',
-  authors: [almog, apurva],
-  image: heroImage,
-  published: true,
-  read: 8
-}
+*Almog Gavra and Apurva Mehta · March 31, 2025 · 8 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Learning from history is the best way to guide future decisions. This post examines four architectural mistakes that distributed systems can make that prevents their longterm success.
+
+![Four Horsemen: Lessons from Distributed System Apocalypse](img/hero-image.png)
+
+---
 
 All distributed systems begin with promise. The ones that endure are those that evolve. The rest become cautionary tales.
 

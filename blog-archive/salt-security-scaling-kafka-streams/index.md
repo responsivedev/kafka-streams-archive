@@ -1,45 +1,12 @@
-import BlogPost from "@/components/blog-post"
-import heroImage from './img/salt-kafka.png';
-import arch1 from './img/1-architecture.png';
-import arch2 from './img/2-architecture.png';
-import lag3 from './img/3-lag.png';
-import e2e4 from './img/4-e2e-latency.png';
-import e2e5 from './img/5-e2e-latency.png';
-import caching6 from './img/6-caching.png';
-import processRate7 from './img/7-process-rate.png';
-import e2e8 from './img/8-e2e-latency.png';
-import inOut9 from './img/9-input-output.png';
-import rebalancing10 from './img/10-rebalancing.png';
+# How Salt Security Scaled Kafka Streams to Secure Billions of API Calls
 
-export const omer_salt = {
-  name: 'Omer Aharonian',
-  title: 'Staff Software Engineer, Salt Security',
-  avatar: '/authors/img/omer-avatar.png',
-  linkedin: 'https://www.linkedin.com/in/omer-aharonian-%F0%9F%8E%97%EF%B8%8F-b3604038/',
-  joinDate: '01-01-9999',
-  department: 'guest',
-  guest: true,
-  bio: `
-  Omer is a seasoned software engineer with extensive experience in backend development, data engineering, system architecture, and leading R&D teams.
-  `,
-};
+*Omer Aharonian · March 25, 2025 · 10 min read*
 
-export const metadata = {
-  title: 'How Salt Security Scaled Kafka Streams to Secure Billions of API Calls',
-  description: 'A guest blog post from Omer Aharonian, an engineer at Salt Security, about scaling Kafka Streams at Salt.',
-  date: '03-25-2025',
-  slug: 'salt-security-scaling-kafka-streams',
-  authors: [omer_salt],
-  image: heroImage,
-  published: true,
-  ctaText: 'Subscribe to learn more about Kafka Streams',
-  read: 10,
-  ks101: false,
-}
+A guest blog post from Omer Aharonian, an engineer at Salt Security, about scaling Kafka Streams at Salt.
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+![How Salt Security Scaled Kafka Streams to Secure Billions of API Calls](img/salt-kafka.png)
+
+---
 
 > This is a guest post in collaboration with [Omer Aharonian](https://www.linkedin.com/in/omer-aharonian-%F0%9F%8E%97%EF%B8%8F-b3604038/), a Staff Software Engineer at Salt Security. Omer is a seasoned software engineer with extensive experience in backend development, data engineering, system architecture, and leading R&D teams.
 
@@ -67,9 +34,7 @@ In Salt’s early days, tracking system interactions was handled through a batch
 
 We realized that to maintain an accurate, real-time view of system activity at scale, we needed to rethink our approach. A more efficient, event-driven architecture was required to ensure continuous, reliable updates without bottlenecks.
 
-<div className={'flex justify-center py-6'}>
-  <img src={arch1.src} alt={"Salt architecture without Kafka Streams"} className={'w-1/2'} />
-</div>
+![Salt architecture without Kafka Streams](img/1-architecture.png)
 
 ## From Batch to Streaming
 
@@ -95,9 +60,7 @@ These requirements lead us to consider both Flink and Kafka Streams. While both 
 
 Learning from previous mistakes, we decided to go for a more modular approach and implement the system discovery process as a pipeline of applications, each in charge of a very specific part of the process. The main idea was to break down a very complex task into a set of smaller sub-tasks (applications) that are easier to reason about, and can be configured and scaled based on their unique needs. For instance, while one application runs only stateless basic processing of the incoming customers’ traffic (and thus works perfectly fine with a handful of replicas), another application might have to run heavy stateful statistical computation and require many replicas to keep up with the high volumes of traffic being ingested into the pipeline.
 
-<div className={'flex justify-center py-6'}>
-  <img src={arch2.src} alt={"Salt architecture with Kafka Streams"} className={'w-3/4'} />
-</div>
+![Salt architecture with Kafka Streams](img/2-architecture.png)
 
 This pipeline of Kafka Streams applications runs on top of Kubernetes, with each application having a dedicated set of relevant configurations, such as CPU/memory limits, HPA and so on.
 
@@ -113,11 +76,9 @@ The first thing we noticed was a degradation in the accuracy of the *System Inve
 
 The usual suspect was, of course, lagging topics. A quick look at our dashboards revealed the issue - extremely high lags in the input topics of one of the applications in the pipeline. A deeper dive into our advanced troubleshooting dashboards revealed high end-to-end (E2E) record latency - from a couple of minutes on average up to 4 hours in the worst cases.
 
-<div className={'grid md:grid-cols-3 gap-2 py-2'}>
-  <img src={lag3.src} alt={"Lag starts to build up on input topics"} className={'h-full'}/>
-  <img src={e2e4.src} alt={"record end to end latency 1"} />
-  <img src={e2e5.src} alt={"record end to end latency 2"} />
-</div>
+![Lag starts to build up on input topics](img/3-lag.png)
+![record end to end latency 1](img/4-e2e-latency.png)
+![record end to end latency 2](img/5-e2e-latency.png)
 
 In addition to the high lags and processing time, we noticed an increase in the following metrics:
 
@@ -175,23 +136,17 @@ To achieve that, we increased the size of the in-memory [Record Cache](https://k
 
 The figure below shows the difference between running with and without the record cache:
 
-<div className={'flex justify-center py-6'}>
-  <img src={caching6.src} alt={"Caching in Kafka Streams"} className={'w-3/4'} />
-</div>
+![Caching in Kafka Streams](img/6-caching.png)
 
 **Benefit 1: Improved Throughput**
 
 The record cache size is controlled by the `statestore.cache.max.bytes` setting, and defaults to 10MB, which is rather low for applications that process tens of thousands of records per second. This would mean fewer disk lookups and fewer network calls to hit EBS. We decided to increase the cache size to 200 MB and the results were quite satisfying. The first thing we noticed was the increase in thread process rate:
 
-<div className={'flex justify-center py-6'}>
-  <img src={processRate7.src} alt={"Before/After Increased Cache Process Rate"} className={'w-3/4'} />
-</div>
+![Before/After Increased Cache Process Rate](img/7-process-rate.png)
 
 The second thing we noticed, which was related to the delayed updates in the System Inventory, was a sharp decrease in the end-to-end record processing latency:
 
-<div className={'flex justify-center py-6'}>
-  <img src={e2e8.src} alt={"Before/After Increased Cache E2E Latency"} className={'w-3/4'} />
-</div>
+![Before/After Increased Cache E2E Latency](img/8-e2e-latency.png)
 
 **Benefit 2: Reduced Downstream Pressure**
 
@@ -201,17 +156,13 @@ The thing about Kafka Streams is that changing the cache size decreases the freq
 
 Why is this cool? Because that way we reduced the load on the other applications in the pipeline!
 
-<div className={'flex justify-center py-6'}>
-  <img src={inOut9.src} alt={"Decrease in output topic messages/sec"} className={'w-3/4'} />
-</div>
+![Decrease in output topic messages/sec](img/9-input-output.png)
 
 ### Reducing Rebalance Frequency and Stabilizing Partition Distribution
 
 With the improved processing rate and the decreased end-to-end record processing time, we were ready to tackle the rebalancing issue. The first sign of concern was the following graph, which indicated we were rebalancing… every ten minutes!?
 
-<div className={'flex justify-center py-6'}>
-  <img src={rebalancing10.src} alt={"Rebalances every 10 minutes"} className={'w-3/4'} />
-</div>
+![Rebalances every 10 minutes](img/10-rebalancing.png)
 
 At first, we were concerned that this meant state was shuffled around between nodes every ten minutes – which would be a clear no-go for applications with significant state, as was the case with ours. A shuffle of state would not only cost us in terms of network bandwidth, but it also triggers a block of time where a task is “restoring” and cannot make progress. During these rebalances, lag would build up significantly.
 

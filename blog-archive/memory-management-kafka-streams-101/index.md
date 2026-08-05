@@ -1,29 +1,14 @@
-import { rohan } from '@/authors';
-import BlogPost from '@/components/blog-post';
-import heroImage from './img/hero-image.png';
-import memoryArch from './img/kafka-streams-memory-architecture.png'
+# Kafka Streams 101: Memory Management
 
-export const metadata = {
-  title: 'Kafka Streams 101: Memory Management',
-  description: 'Learn the concepts, configs, and application design strategies to use memory as efficiently as possible and avoid the dreaded out of memory errors.',
-  date: '03-13-2025',
-  slug: 'memory-management-kafka-streams-101',
-  authors: [rohan],
-  image: heroImage,
-  published: true,
-  ctaText: 'Subscribe to be notified about the next Kafka Streams 101 lesson',
-  read: 15,
-  ks101: true,
-}
+*Rohan Desai · March 13, 2025 · 15 min read*
 
-export default function Layout({children}) {
-  return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Learn the concepts, configs, and application design strategies to use memory as efficiently as possible and avoid the dreaded out of memory errors.
 
-<div className={'text-center text-sm'}>
-  **Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
-</div>
+![Kafka Streams 101: Memory Management](img/hero-image.png)
 
+---
+
+**Last Updated:** Apache Kafka version 4.0 and Responsive SDK version 0.39.0
 
 **Learning Objective:** After this Kafka Streams 101 lesson, you will understand how Kafka Streams uses memory, what symptoms indicate that your application doesn’t have enough available memory, and how to configure Kafka Streams to use memory appropriately.
 
@@ -31,10 +16,7 @@ export default function Layout({children}) {
 
 The first thing to understand is how exactly Kafka Streams uses memory. We can break down memory usage into the following categories:
 
-<div className={'flex flex-col justify-center items-center py-6'}>
-  <img src={memoryArch.src} alt={"The memory architecture of a Kafka Streams node with RocksDB"} />
-</div>
-
+![The memory architecture of a Kafka Streams node with RocksDB](img/kafka-streams-memory-architecture.png)
 
 **Heap:** Allocations done by the JVM on the Java heap to run your application.
 

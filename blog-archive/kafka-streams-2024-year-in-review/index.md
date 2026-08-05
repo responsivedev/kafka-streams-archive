@@ -1,22 +1,12 @@
-import {sophie} from "@/authors";
-import BlogPost from "@/components/blog-post";
-import heroImage from './img/hero-image.png'
+# Kafka Streams Wrapped: 2024 in review
 
-export const metadata = {
-    title: "Kafka Streams Wrapped: 2024 in review",
-    description: "Kafka Streams had some tremendous additions and improvements in 2024. Here are the highlights.",
-    date: '12-19-2024',
-    slug: 'kafka-streams-2024-year-in-review',
-    authors: [sophie],
-    image: heroImage,
-    published: true,
-    read: 8
-}
+*Sophie Blee-Goldman · December 19, 2024 · 8 min read*
 
-export default function Layout({children}) {
-    return <BlogPost meta={metadata} toc={tableOfContents}>{children}</BlogPost>
-}
+Kafka Streams had some tremendous additions and improvements in 2024. Here are the highlights.
 
+![Kafka Streams Wrapped: 2024 in review](img/hero-image.png)
+
+---
 
 As always, Kafka Streams delivered a solid haul of KIPs over the last year. To celebrate all the hard work that went into these and thank the community members who contributed or participated in a KIP, we thought it would be fun to take a look at what we shipped in 2024. We hope you come away from this with a better sense of what’s been going on in the Kafka Streams community and maybe even get inspired to try out one of these in action.
 
@@ -182,4 +172,4 @@ The metrics in this KIP make it much easier to spot a leaking iterator, allowing
 
 We at Responsive are very grateful for the Kafka Streams community. It’s a passionate group of people who provide amazing feedback and make contributions. Thanks to the community’s efforts, Kafka Streams continues to be the #1 embedded stream processor and [continues to be the default choice](https://github.com/responsivedev/awesome-kafka-streams/) for a wide range of companies building mission critical event driven applications. The pace of progress is immense, and we will be doing a follow up blog post on all the major improvements you can look forward to in 2025 and beyond.
 
-We at Responsive are also grateful that we get to play a part in the Kafka Streams story. In 2024, we released an [SDK](/sdk) that brings remote state, async processing, and more to Kafka Streams, thus giving the community several options for further improving the reliability and scalability of their applications. There is a lot more we plan to do in 2025, and look forward to enjoying the ride with all of you!
+We at Responsive are also grateful that we get to play a part in the Kafka Streams story. In 2024, we released an [SDK](https://www.responsive.dev/sdk) that brings remote state, async processing, and more to Kafka Streams, thus giving the community several options for further improving the reliability and scalability of their applications. There is a lot more we plan to do in 2025, and look forward to enjoying the ride with all of you!
